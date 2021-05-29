@@ -26,7 +26,9 @@ public class Robot : Agent<Robot>
     [SerializeField] private float _minChargedBatteryLevel;
     [SerializeField] public float _batteryChargeTransferPerSecond;
     public bool FullyCharged => _batteryLevel >= 0.99f * _maxBatteryLevel;
-
+    public bool IsBatteryLow => _batteryLevel <= _batteryLowLevel;
+    public float MinChargedBatteryLevel => _minChargedBatteryLevel;
+    
     // UI
     [SerializeField] private Slider _energyDisplay;
     [SerializeField] private TMP_Text _nameText;
@@ -34,6 +36,7 @@ public class Robot : Agent<Robot>
     // Movement
     private NavMeshAgent _navAgent;
     [SerializeField] private float _reachedDestinationThreshold = 0.1f;
+    public float ReachedDestinationThreshold => _reachedDestinationThreshold;
     public bool HasReachedDestination => _navAgent.remainingDistance < _reachedDestinationThreshold;
     public NavMeshAgent NavAgent => _navAgent;
 
@@ -56,25 +59,6 @@ public class Robot : Agent<Robot>
     {
         base.Update();
 
-        // If the robot's battery is running low
-        // TODO: Find a more elegant way of handling state conditions here
-        if (_batteryLevel < _batteryLowLevel
-            && !IsInState<RobotMovingState>() && !IsInState<RobotPlugIntoBattery>() && !IsInState<RobotChargingState>())
-        {
-            // Find the nearest battery that has power in it
-            var nearestBattery = FindObjectsOfType<Battery>().Where(b => b.Charge > _minChargedBatteryLevel && !b.PickedUp).OrderBy(b => b.Charge).FirstOrDefault();
-            
-            // If a charged battery can be found
-            if (nearestBattery != null)
-            {
-                // Head to the battery and plug into it
-                MoveToObjectAndChangeState(nearestBattery.transform, () =>
-                {
-                    GotoState<RobotPlugIntoBattery>(this, nearestBattery);
-                });    
-            }
-        }
-
         UpdateUI();
         
         HandleDebugControls();
@@ -90,26 +74,27 @@ public class Robot : Agent<Robot>
 
     private void UpdateUI()
     {
-        // Update the robot's name
+        // Update the robot's name and state
         _nameText.text = $"{Name}\n<size=50%>{_currentState.Name}</size>";
         
         // Update the battery remaining level
         _energyDisplay.value = BatteryLevel / _maxBatteryLevel;
     }
 
-    public void MoveToPositionAndChangeState(Vector3 destination, Action onReached)
-    {
-        GotoState<RobotMovingToPositionState>(this, destination, onReached);
-    }
+    // public void MoveToPositionAndChangeState(Vector3 destination, Action onReached)
+    // {
+    //     GotoState<RobotMovingToPositionState>(this, destination, onReached);
+    // }
 
-    private void MoveToObjectAndChangeState(Transform target, Action onReached)
+    public void MoveToObjectWithCallback(Transform target, Action onReached = null, Func<bool> shouldContinueProvider = null)
     {
-        GotoState<RobotMovingToTargetState>(this, target, onReached);
+        NavAgent.isStopped = false;
+        GotoState<RobotMovingToTargetState>(this, target, onReached, shouldContinueProvider);
     }
 
     public void Stop()
     {
-        NavAgent.ResetPath();
+        NavAgent.isStopped = true;
     }
 
     public void Idle()
@@ -122,18 +107,31 @@ public class Robot : Agent<Robot>
         if (_holding != null)
             throw new Exception($"Tried to pick up {pickup.name} while already holding {_holding.name}");
 
+        // Turn off the pickup's physics
+        var rigidbody = pickup.gameObject.GetComponent<Rigidbody>();
+        rigidbody.useGravity = false;
+        rigidbody.isKinematic = true;
+        
+        // Pickup the object
         _holding = pickup;
         pickup.transform.SetParent(_hands);
         pickup.transform.localPosition = Vector3.zero;
+        pickup.IsPickedUp = true;
     }
 
     public void Drop(IPickup pickup)
     {
         if (_holding != pickup)
             throw new Exception($"Tried to drop {pickup.name} that wasn't holding");
+
+        // Turn on the pickup's physics
+        var rigidbody = pickup.gameObject.GetComponent<Rigidbody>();
+        rigidbody.useGravity = true;
+        rigidbody.isKinematic = false;
         
+        // Drop the object
         _holding = null;
         pickup.transform.SetParent(null);
-        pickup.transform.position = new Vector3(pickup.transform.position.x, 0, pickup.transform.position.z); // TODO: Use rigid bodies to drop things
+        pickup.IsPickedUp = false;
     }
 }

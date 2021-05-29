@@ -25,6 +25,8 @@ namespace States
 			_battery.Charge -= chargeToTransfer;
 			Agent.BatteryLevel += chargeToTransfer * _battery._energyPerCharge;
 			
+			// TODO: Move all the battery related stuff into a BatteryDrainingState
+			
 			// If the robot is fully charged
 			if (Agent.FullyCharged)
 			{
@@ -40,7 +42,7 @@ namespace States
 			// If the battery is empty
 			if (_battery.Charge <= 0)
 			{
-				Debug.Log($"Battery fulyl drained");
+				Debug.Log($"Battery fully drained");
 				
 				// TODO: Take the battery for charging
 				

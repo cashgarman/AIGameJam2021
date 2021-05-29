@@ -2,6 +2,6 @@
 {
 	public class BatteryIdleState : AgentState<Battery>
 	{
-		public override string Name => "";
+		public override string Name => "Idle";
 	}
 }

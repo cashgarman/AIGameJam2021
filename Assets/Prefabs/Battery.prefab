@@ -49,6 +49,7 @@ GameObject:
   - component: {fileID: 1235419449649750925}
   - component: {fileID: 1235419449649750924}
   - component: {fileID: 1235419449649750912}
+  - component: {fileID: 1633201006}
   m_Layer: 0
   m_Name: Battery
   m_TagString: Untagged
@@ -149,6 +150,25 @@ MonoBehaviour:
   _maxCharge: 100
   _chargeDisplay: {fileID: 1235419450631344954}
   _energyPerCharge: 5
+  _lowChargeLevel: 25
+  _chargeOverride: 0
+  _nameText: {fileID: 1235419450401966976}
+--- !u!54 &1633201006
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1235419449649750927}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &1235419449880663881
 GameObject:
   m_ObjectHideFlags: 0
@@ -177,7 +197,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1235419449880663881}
   m_LocalRotation: {x: -0.06548258, y: 0.87790126, z: -0.45738894, w: -0.12568568}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -0.57}
   m_LocalScale: {x: 0.037240002, y: 0.03724, z: 0.03724}
   m_Children:
   - {fileID: 1235419450631344933}
@@ -187,7 +207,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 1.34}
+  m_AnchoredPosition: {x: -0.17, y: 1.75}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!223 &1235419449880663874
@@ -404,7 +424,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0, y: 14.6}
+  m_AnchoredPosition: {x: -0, y: 35}
   m_SizeDelta: {x: 500, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1235419450401966977
@@ -435,7 +455,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Battery
+  m_text: 'Battery
+
+    <size=50%>Idle</size>'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 7e1944f2781633d4c802cf30e1a120f2, type: 2}
   m_sharedMaterial: {fileID: 4923562986991051952, guid: 7e1944f2781633d4c802cf30e1a120f2, type: 2}

@@ -6,7 +6,8 @@ namespace States
 	public abstract class RobotMovingState : AgentState<Robot>
 	{
 		protected Action _onReached;
-
+		protected Func<bool> _abortProvider;
+		
 		public override void OnTick()
 		{
 			base.OnTick();
@@ -17,6 +18,18 @@ namespace States
 			
 			// Drain the robot's battery
 			Agent.BatteryLevel -= Agent._movingBatteryDrainPerSecond * Time.deltaTime;
+			
+			// Check if we should abort moving
+			if (_abortProvider != null && _abortProvider())
+			{
+				Debug.Log($"Aborting moving");
+				
+				// // Stop moving
+				Agent.Stop();
+				
+				// Abort moving and return to idle
+				Agent.Idle();
+			}
 			
 			// If the robot has reached the destination
 			if (Agent.HasReachedDestination)
