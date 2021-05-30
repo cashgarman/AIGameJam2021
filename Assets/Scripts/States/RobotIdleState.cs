@@ -12,6 +12,7 @@ namespace States
 			base.OnTick();
 			
 			// TODO: All this should be replaced by code
+			return;
 			
 			// Drain the robot's battery
 			// TODO: Pull this draining logic into a base class

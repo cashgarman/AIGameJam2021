@@ -22,7 +22,8 @@ namespace Programming
 			Description,
 			Conjunction,
 			Verb,
-			Adjective
+			Adjective,
+			Filter,
 		}
 
 		public string Word { get; set; }
@@ -32,6 +33,11 @@ namespace Programming
 		{
 			Word = word;
 			Type = tokenType;
+		}
+
+		public override string ToString()
+		{
+			return $"{Word} ({Type})";
 		}
 	}
 
@@ -56,10 +62,7 @@ namespace Programming
 		private void Awake()
 		{
 			_instance = this;
-		}
-
-		private void Start()
-		{
+		
 			_commandInput.onValueChanged.AddListener(OnCommandChanged);
 			
 			_tokenList.ClearChildren();
@@ -157,6 +160,9 @@ namespace Programming
 				case Token.TokenType.Adjective:
 					// (Adjective) [Subject]
 					return new QualifierNode(new AdjectiveNode(first), CreateNode(rest));
+				case Token.TokenType.Filter:
+					// (Filter) [Subject]
+					return new PredicateNode(new FilterNode(first), CreateNode(rest));
 				default:
 					throw new ArgumentOutOfRangeException();
 			}
@@ -204,38 +210,96 @@ namespace Programming
 
 		public static Program Compile(string code)
 		{
-			// TODO: Break the program first into lines of code, and compile each line
-			// TODO: When running the program, wait until the action from the previous line of code finishes first before executing the next line
-			
-			var tokens = _instance.Tokenize(code);
-			var rootNode = _instance.CreateNode(tokens);
+			// Break the program first into lines of code, and compile each line
+			var lines = code.Split('\n');
+			Debug.Log($"Code has {lines.Length} lines of code");
 
-			if (!(rootNode is BranchNode))
-				throw new Exception($"Compiled a program and ended up with just a root leaf node");
-			
-			return new Program(rootNode as BranchNode);
+			var program = new Program();
+			foreach (var line in lines)
+			{
+				var tokens = _instance.Tokenize(line);
+				var rootNode = _instance.CreateNode(tokens);
+				
+				if (!(rootNode is BranchNode))
+					throw new Exception($"Compiled a program and ended up with just a root leaf node");
+				
+				program.AddLine(line, rootNode as BranchNode);
+			}
+
+			return program;
 		}
 	}
 
 	[Serializable]
 	public class Program
 	{
-		private readonly BranchNode _rootNode;
-
-		public Program(BranchNode rootNode)
+		public class LineOfCode
 		{
-			_rootNode = rootNode;
+			public string Code { get; }
+			private BranchNode RootNode { get; }
+
+			public LineOfCode(string code, BranchNode rootNode)
+			{
+				Code = code;
+				RootNode = rootNode;
+			}
+
+			public void Run(IComputer computer)
+			{
+				Debug.Log($"Running code '{Code}' on {computer.name}");
+				RootNode.Run(computer);
+			}
 		}
 
-		public void Run(IComputer computer)
+		private readonly List<LineOfCode> _lineEntryPoints = new List<LineOfCode>();
+		private int _currentLine = 0;
+		private bool _shouldLoop = true;
+		private bool _halted;
+
+		public Program()
 		{
-			_rootNode.Run(computer);
+		}
+
+		public void AddLine(string code, BranchNode rootNode)
+		{
+			Debug.Log($"Added a line of code '{code}' to the program with root node: {rootNode.ToString()}");
+			_lineEntryPoints.Add(new LineOfCode(code, rootNode));
+		}
+
+		public void RunCurrentLine(IComputer computer)
+		{
+			if (_halted)
+				return;
+			
+			// Run the current line of code
+			_lineEntryPoints[_currentLine].Run(computer);
+		}
+
+		public void GotoNextLine()
+		{
+			if (_halted)
+				return;
+			
+			// Move to the next line of code
+			_currentLine++;
+			
+			// Loop the program once it's reached the end
+			if (_currentLine == _lineEntryPoints.Count)
+			{
+				Debug.Log($"Program finished");
+				_currentLine = 0;
+				if (!_shouldLoop)
+				{
+					_halted = true;
+				}
+			}
 		}
 	}
 
 	public interface IComputer
 	{
 		Transform transform { get; }
+		string name { get; set; }
 		void ExecuteCommand(string command, object argument);
 	}
 
@@ -259,6 +323,13 @@ namespace Programming
 		{
 		}
 	}
+	
+	internal class FilterNode : LeafNode
+	{
+		public FilterNode(Token token) : base(token)
+		{
+		}
+	}
 
 	internal class ActionNode : BranchNode
 	{
@@ -279,18 +350,11 @@ namespace Programming
 			{
 				case SubjectNode subjectNode:
 					subject = World.GetRandomAgent(subjectNode.word);
-
-					if (subject == null)
-						throw new Exception($"Couldn't find a subject of type {subjectNode.word} to execute verb '{_verb.word}'");
-							
 					break;
+				
 				case QualifierNode qualifierNode:
 					qualifierNode.Run(computer);
 					subject = qualifierNode.Subject;
-					
-					if(subject == null)
-						throw new Exception($"Couldn't find a subject when look with qualifier {qualifierNode.word} to execute verb '{_verb.word}'");
-							
 					break;
 			};
 			
@@ -323,14 +387,47 @@ namespace Programming
 					{
 						// TODO: Refactor this to use lists of BaseAgents everywhere, so we can support multiple-adjective filtering
 						"nearest" => World.GetClosestAgent(subjectNode.word, computer),
-						"emptiest" => World.GetAgentSortedBy(subjectNode.word, computer, "emptiest"),
-						"fullest" => World.GetAgentSortedBy(subjectNode.word, computer, "fullest"),
 						_ => throw new Exception($"Unhandled adjective in qualifying node {_adjective.word}")
 					};
 					break;
 				case QualifierNode qualifierNode:
 					qualifierNode.Run(computer);
 					_foundSubject = qualifierNode.Subject;
+					break;
+				case PredicateNode predicateNode:
+					predicateNode.Run(computer);
+					_foundSubject = predicateNode.Subjects.FirstOrDefault();
+					break;
+			};
+		}
+	}
+	
+	internal class PredicateNode : BranchNode
+	{
+		private readonly FilterNode _filter;
+		private readonly Node _subject;
+		private IEnumerable<BaseAgent> _foundSubjects;
+
+		public PredicateNode(FilterNode filter, Node subject)
+		{
+			_filter = filter;
+			_subject = subject;
+		}
+
+		public IEnumerable<BaseAgent> Subjects => _foundSubjects;
+
+		public override void Run(IComputer computer)
+		{
+			// Filter the available subjects
+			switch(_filter)
+			{
+				case FilterNode filterNode:
+					_foundSubjects = filterNode.word switch
+					{
+						"empty" => World.GetClosestAgents(_subject.word, computer, "empty"),
+						"full" => World.GetClosestAgents(_subject.word, computer, "full"),
+						_ => throw new Exception($"Unhandled adjective in qualifying node {_filter.word}")
+					};
 					break;
 			};
 		}
@@ -340,6 +437,11 @@ namespace Programming
 	public abstract class Node
 	{
 		public string word;
+
+		public override string ToString()
+		{
+			return word;
+		}
 	}
 
 	public abstract class BranchNode : Node
@@ -349,7 +451,6 @@ namespace Programming
 
 	internal abstract class LeafNode : Node
 	{
-
 		protected LeafNode(Token token)
 		{
 			word = token.Word;

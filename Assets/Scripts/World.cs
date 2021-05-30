@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Programming;
 using UnityEngine;
 
@@ -25,7 +27,7 @@ public class World : MonoBehaviour
 		};
 	}
 
-	public static BaseAgent GetClosestAgent(string type, IComputer computer)
+	public static BaseAgent GetClosestAgent(string type, IComputer computer, string filter = null)
 	{
 		return FindObjectsOfType(GetTypeFromName(type)).Select(a => a as BaseAgent)
 			.OrderBy(a => Vector3.Distance(a.transform.position, computer.transform.position))
@@ -37,5 +39,12 @@ public class World : MonoBehaviour
 		return FindObjectsOfType(GetTypeFromName(type)).Select(a => a as BaseAgent)
 			.OrderBy(a => a.GetOrderBy(sortType))
 			.FirstOrDefault();
+	}
+
+	public static IEnumerable<BaseAgent> GetClosestAgents(string type, IComputer computer, string filter)
+	{
+		return FindObjectsOfType(GetTypeFromName(type)).Select(a => a as BaseAgent)
+			.Where(a => a.FilterBy(filter))
+			.OrderBy(a => Vector3.Distance(a.transform.position, computer.transform.position));
 	}
 }

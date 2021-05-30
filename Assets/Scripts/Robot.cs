@@ -23,6 +23,7 @@ public class Robot : Agent<Robot>, IComputer
     public float _idleBatteryDrainPerSecond;
     public float _movingBatteryDrainPerSecond;
     [SerializeField] private float _batteryLowLevel;
+    [SerializeField] private float _batteryHighLevel;
     [SerializeField] private float _minChargedBatteryLevel;
     [SerializeField] public float _batteryChargeTransferPerSecond;
     public bool FullyCharged => _batteryLevel >= 0.99f * _maxBatteryLevel;
@@ -42,7 +43,7 @@ public class Robot : Agent<Robot>, IComputer
 
     // Inventory
     [SerializeField] private Transform _hands;
-    private IPickup _holding;
+    public IPickup _holding;
     
     // Brain
     [SerializeField] private bool _runCode = false;
@@ -52,16 +53,15 @@ public class Robot : Agent<Robot>, IComputer
     private void Awake()
     {
         _navAgent = GetComponent<NavMeshAgent>();
+        BatteryLevel = _maxBatteryLevel;
     }
 
     void Start()
     {
-        BatteryLevel = _maxBatteryLevel;
-
         if (_runCode)
         {
             _program = Compiler.Compile(code);
-            _program.Run(this);
+            _program.RunCurrentLine(this);
         }
         else
         {
@@ -116,7 +116,7 @@ public class Robot : Agent<Robot>, IComputer
         GotoState<RobotIdleState>(this);
     }
 
-    public void PickUp(IPickup pickup)
+    public void PickUp(IPickup pickup, Action onComplete = null)
     {
         if (_holding != null)
             throw new Exception($"Tried to pick up {pickup.name} while already holding {_holding.name}");
@@ -127,13 +127,17 @@ public class Robot : Agent<Robot>, IComputer
         rigidbody.isKinematic = true;
         
         // Pickup the object
+        Debug.Log($"{name} picked up {pickup.name}");
         _holding = pickup;
         pickup.transform.SetParent(_hands);
         pickup.transform.localPosition = Vector3.zero;
         pickup.IsPickedUp = true;
+        
+        // TODO: Wait for any animations and whatnot
+        onComplete?.Invoke();
     }
 
-    public void Drop(IPickup pickup)
+    public void Drop(IPickup pickup, Action onComplete = null)
     {
         if (_holding != pickup)
             throw new Exception($"Tried to drop {pickup.name} that wasn't holding");
@@ -144,21 +148,76 @@ public class Robot : Agent<Robot>, IComputer
         rigidbody.isKinematic = false;
         
         // Drop the object
+        Debug.Log($"{name} dropped {pickup.name}");
         _holding = null;
         pickup.transform.SetParent(null);
         pickup.IsPickedUp = false;
+        
+        // TODO: Wait for any animations and whatnot
+        onComplete?.Invoke();
     }
 
     public void ExecuteCommand(string command, object argument)
     {
+        Debug.Log($"Attempting to execute command '{command}' with arguement '{argument}' on {name}");
+        
         switch (command)
         {
             case "goto":
                 var agent = argument as BaseAgent;
-                if (agent == null)
-                    throw new Exception($"Failed to execute command {command}: Argument provided is not an agent");
                 
-                MoveToObjectWithCallback(agent.transform);
+                // If a valid agent couldn't be found (there might not be one available right now)
+                if (agent == null)
+                {
+                    // Wait a bit then try to run the same line again
+                    // TODO: Find a better place to put this magic number
+                    StartCoroutine(Util.Delay(1f, () => _program.RunCurrentLine(this)));
+                    return;
+                }
+                
+                MoveToObjectWithCallback(agent.transform, () =>
+                {
+                    _program.GotoNextLine();
+                    _program.RunCurrentLine(this);
+                });
+                break;
+            
+            case "pickup":
+                var pickupTarget = argument as IPickup;
+                
+                // If a valid agent couldn't be found (there might not be one available right now)
+                if (pickupTarget == null)
+                {
+                    // Wait a bit then try to run the same line again
+                    // TODO: Find a better place to put this magic number
+                    StartCoroutine(Util.Delay(1f, () => _program.RunCurrentLine(this)));
+                    return;
+                }
+                
+                PickUp(pickupTarget, () =>
+                {
+                    _program.GotoNextLine();
+                    _program.RunCurrentLine(this);
+                });
+                break;
+            
+            case "drop":
+                var dropTarget = argument as IPickup;
+                
+                // If a valid agent couldn't be found (there might not be one available right now)
+                if (dropTarget == null)
+                {
+                    // Wait a bit then try to run the same line again
+                    // TODO: Find a better place to put this magic number
+                    StartCoroutine(Util.Delay(1f, () => _program.RunCurrentLine(this)));
+                    return;
+                }
+                
+                Drop(dropTarget, () =>
+                {
+                    _program.GotoNextLine();
+                    _program.RunCurrentLine(this);
+                });
                 break;
         }
     }
@@ -169,6 +228,16 @@ public class Robot : Agent<Robot>, IComputer
         {
             "fullest" => _batteryLevel / _maxBatteryLevel,
             "emptiest" => 1f - _batteryLevel / _maxBatteryLevel
+        };
+    }
+
+    public override bool FilterBy(string filter)
+    {
+        return filter switch
+        {
+            "empty" => _batteryLevel <= _batteryLowLevel, // TODO: Should this be zero, or close enough
+            "full" => _batteryLevel >= _batteryHighLevel, // TODO: Should this be zero, or close enough
+            _ => throw new Exception($"Invalid filter provided: {filter}")
         };
     }
 }

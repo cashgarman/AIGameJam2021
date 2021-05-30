@@ -1,3 +1,4 @@
+using System;
 using States;
 using TMPro;
 using UnityEngine;
@@ -17,6 +18,8 @@ public class Battery : Agent<Battery>, IPickup
     [SerializeField] private float _lowChargeLevel;
     [SerializeField] private float _chargeOverride;
     [SerializeField] private TMP_Text _nameText;
+    [SerializeField] private float _chargeLowThreshold;
+    [SerializeField] private float _chargeHighThreshold;
 
     public bool IfFull => _charge == _maxCharge;
 
@@ -33,19 +36,33 @@ public class Battery : Agent<Battery>, IPickup
     public bool IsLow => _charge < _lowChargeLevel;
     public bool IsCharging { get; set; }
 
-    void Start()
+    void Awake()
     {
         Charge = _chargeOverride > 0 ? _chargeOverride : _maxCharge;
+    }
+
+    private void Start()
+    {
         GotoState<BatteryIdleState>(this);
     }
-    
+
     protected override void Update()
     {
         base.Update();
 
         UpdateUI();
+        
+        HandleDebugControls();
     }
-    
+
+    private void HandleDebugControls()
+    {
+        if (Input.GetKeyDown(KeyCode.Delete))
+        {
+            Charge -= 10f;
+        }
+    }
+
     private void UpdateUI()
     {
         // Update the battery's name and state
@@ -67,6 +84,16 @@ public class Battery : Agent<Battery>, IPickup
         {
             "fullest" => _charge / _maxCharge,
             "emptiest" => 1f - _charge / _maxCharge
+        };
+    }
+    
+    public override bool FilterBy(string filter)
+    {
+        return filter switch
+        {
+            "empty" => _charge <= _chargeLowThreshold, // TODO: Should this be zero, or close enough
+            "full" => _charge >= _chargeHighThreshold, // TODO: Should this be zero, or close enough
+            _ => throw new Exception($"Invalid filter provided: {filter}")
         };
     }
 }

@@ -14,7 +14,10 @@ namespace States
 			
 			// Wait until the path to the destination has been calculated
 			if (Agent.NavAgent.pathPending)
+			{
+				Debug.Log($"Path calculation still pending");
 				return;
+			}
 			
 			// Drain the robot's battery
 			Agent.BatteryLevel -= Agent._movingBatteryDrainPerSecond * Time.deltaTime;
@@ -39,18 +42,11 @@ namespace States
 				// Stop moving
 				Agent.Stop();
 				
-				// If there is an on reached callback
-				if (_onReached != null)
-				{
-					// Call it
-					_onReached?.Invoke();	
-				}
-				// Otherwise
-				else
-				{
-					// Just go back to idle
-					Agent.Idle();
-				}
+				// Just go back to idle
+				Agent.Idle();
+				
+				// Call any onReached callback
+				_onReached?.Invoke();
 			}
 		}
 	}

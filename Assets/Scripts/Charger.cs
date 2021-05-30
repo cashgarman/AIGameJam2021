@@ -29,4 +29,9 @@ public class Charger : Agent<Charger>
         // TODO: Nothing to sort chargers by right now
         return 1;
     }
+
+    public override bool FilterBy(string filter)
+    {
+        return true;
+    }
 }

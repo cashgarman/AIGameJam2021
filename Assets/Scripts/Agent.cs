@@ -5,6 +5,7 @@ public abstract class BaseAgent : SerializedMonoBehaviour
 {
 	public abstract string Name { get; }
 	public abstract float GetOrderBy(string sortType);
+	public abstract bool FilterBy(string filter);
 }
 
 public abstract class Agent<AgentType> : BaseAgent where AgentType : BaseAgent

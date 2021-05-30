@@ -27,8 +27,15 @@ namespace States
 
 		public override void OnTick()
 		{
-			// If the target has moved
-			if (Vector3.Distance(_target.position, _prevTargetPosition) > Agent.ReachedDestinationThreshold)
+			// If the robot is holding the target it's trying to reach
+			if (_target == Agent._holding)
+			{
+				Debug.Log($"reached");
+				return;
+			}
+			
+			// If the target has moved (and the path has already been calculated)
+			if (Vector3.Distance(_target.position, _prevTargetPosition) > Agent.ReachedDestinationThreshold && !Agent.NavAgent.pathPending)
 			{
 				Debug.Log($"Target moved, recalculating path");
 				
