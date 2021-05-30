@@ -1,12 +1,12 @@
 using System;
-using System.Linq;
+using Programming;
 using States;
 using TMPro;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.UI;
 
-public class Robot : Agent<Robot>
+public class Robot : Agent<Robot>, IComputer
 {
     public override string Name => name;
 
@@ -43,6 +43,10 @@ public class Robot : Agent<Robot>
     // Inventory
     [SerializeField] private Transform _hands;
     private IPickup _holding;
+    
+    // Brain
+    [SerializeField] private string code;
+    private Program _program;
 
     private void Awake()
     {
@@ -52,7 +56,10 @@ public class Robot : Agent<Robot>
     void Start()
     {
         BatteryLevel = _maxBatteryLevel;
-        GotoState<RobotIdleState>(this);
+        // GotoState<RobotIdleState>(this);
+
+        _program = Compiler.Compile(code);
+        _program.Run(this);
     }
 
     protected override void Update()
@@ -133,5 +140,19 @@ public class Robot : Agent<Robot>
         _holding = null;
         pickup.transform.SetParent(null);
         pickup.IsPickedUp = false;
+    }
+
+    public void ExecuteCommand(string command, object argument)
+    {
+        switch (command)
+        {
+            case "goto":
+                var agent = argument as BaseAgent;
+                if (agent == null)
+                    throw new Exception($"Failed to execute command {command}: Argument provided is not an agent");
+                
+                MoveToObjectWithCallback(agent.transform);
+                break;
+        }
     }
 }

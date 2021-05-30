@@ -39,11 +39,18 @@ namespace States
 				// Stop moving
 				Agent.Stop();
 				
-				// Call the on reached callback
-				_onReached?.Invoke();
-				
-				// Change to the arrival state
-				//Agent.GotoState(Agent, _onArriveState, _object);
+				// If there is an on reached callback
+				if (_onReached != null)
+				{
+					// Call it
+					_onReached?.Invoke();	
+				}
+				// Otherwise
+				else
+				{
+					// Just go back to idle
+					Agent.Idle();
+				}
 			}
 		}
 	}

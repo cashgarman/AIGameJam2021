@@ -155,7 +155,24 @@ public class Util
 		return String.Format("{0} day{1} ago", delta, delta > 1 ? "s" : "");
 	}
 
-	public static void PopulateFromJSONObject(object obj, string path)
+	public static void PopulateObjectFromJSON(object obj, string json)
+	{
+		try
+		{
+			JsonSerializer.CreateDefault(new JsonSerializerSettings())
+				.Populate(JObject.Parse(json).CreateReader(), obj);
+		}
+		catch (JsonReaderException e)
+		{
+			throw new Exception("Error while parsing JSON: " + e.Message);
+		}
+		catch (JsonException e)
+		{
+			throw new Exception(e.Message);
+		}
+	}
+	
+	public static void PopulateObjectFromJSONPath(object obj, string path)
 	{
 		try
 		{

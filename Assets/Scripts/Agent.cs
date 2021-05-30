@@ -1,7 +1,7 @@
 ﻿using System;
-using UnityEngine;
+using Sirenix.OdinInspector;
 
-public abstract class BaseAgent : MonoBehaviour
+public abstract class BaseAgent : SerializedMonoBehaviour
 {
 	public abstract string Name { get; }
 }
@@ -35,7 +35,7 @@ public abstract class Agent<AgentType> : BaseAgent where AgentType : BaseAgent
 
 	protected virtual void Update()
 	{
-		_currentState.OnTick();
+		_currentState?.OnTick();
 	}
 
 	protected bool IsInState<T>() where T : BaseState
