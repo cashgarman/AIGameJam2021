@@ -20,6 +20,7 @@ public class World : MonoBehaviour
 		return type switch
 		{
 			"charger" => typeof(Charger),
+			"battery" => typeof(Battery),
 			_ => throw new Exception($"Tried to get type from unknown name {type}")
 		};
 	}
@@ -27,6 +28,14 @@ public class World : MonoBehaviour
 	public static BaseAgent GetClosestAgent(string type, IComputer computer)
 	{
 		return FindObjectsOfType(GetTypeFromName(type)).Select(a => a as BaseAgent)
-			.OrderBy(a => Vector3.Distance(a.transform.position, computer.transform.position)).FirstOrDefault();
+			.OrderBy(a => Vector3.Distance(a.transform.position, computer.transform.position))
+			.FirstOrDefault();
+	}
+
+	public static BaseAgent GetAgentSortedBy(string type, IComputer computer, string sortType)
+	{
+		return FindObjectsOfType(GetTypeFromName(type)).Select(a => a as BaseAgent)
+			.OrderBy(a => a.GetOrderBy(sortType))
+			.FirstOrDefault();
 	}
 }

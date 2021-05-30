@@ -11,6 +11,8 @@ namespace States
 		{
 			base.OnTick();
 			
+			// TODO: All this should be replaced by code
+			
 			// Drain the robot's battery
 			// TODO: Pull this draining logic into a base class
 			Agent.BatteryLevel -= Agent._idleBatteryDrainPerSecond * Time.deltaTime;

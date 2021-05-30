@@ -60,4 +60,13 @@ public class Battery : Agent<Battery>, IPickup
             GotoState<BatteryChargingState>(this, charger);
         }
     }
+    
+    public override float GetOrderBy(string sortType)
+    {
+        return sortType switch
+        {
+            "fullest" => _charge / _maxCharge,
+            "emptiest" => 1f - _charge / _maxCharge
+        };
+    }
 }

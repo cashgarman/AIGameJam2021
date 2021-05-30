@@ -23,4 +23,10 @@ public class Charger : Agent<Charger>
             battery.OnNearbyCharger(this);
         }
     }
+    
+    public override float GetOrderBy(string sortType)
+    {
+        // TODO: Nothing to sort chargers by right now
+        return 1;
+    }
 }

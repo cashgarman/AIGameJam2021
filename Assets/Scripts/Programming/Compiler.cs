@@ -125,7 +125,7 @@ namespace Programming
 					return new Token(token.word, token.type);
 			}
 			
-			throw new Exception($"Couldn't find a matching token for word {word}");
+			throw new Exception($"Couldn't find a matching token for word '{word}'");
 		}
 
 		private Node CreateNode(IEnumerable<Token> tokens)
@@ -204,6 +204,9 @@ namespace Programming
 
 		public static Program Compile(string code)
 		{
+			// TODO: Break the program first into lines of code, and compile each line
+			// TODO: When running the program, wait until the action from the previous line of code finishes first before executing the next line
+			
 			var tokens = _instance.Tokenize(code);
 			var rootNode = _instance.CreateNode(tokens);
 
@@ -276,13 +279,21 @@ namespace Programming
 			{
 				case SubjectNode subjectNode:
 					subject = World.GetRandomAgent(subjectNode.word);
+
+					if (subject == null)
+						throw new Exception($"Couldn't find a subject of type {subjectNode.word} to execute verb '{_verb.word}'");
+							
 					break;
 				case QualifierNode qualifierNode:
 					qualifierNode.Run(computer);
 					subject = qualifierNode.Subject;
+					
+					if(subject == null)
+						throw new Exception($"Couldn't find a subject when look with qualifier {qualifierNode.word} to execute verb '{_verb.word}'");
+							
 					break;
 			};
-
+			
 			// Tell the computer to run the verb on the subject
 			computer.ExecuteCommand(_verb.word, subject);
 		}
@@ -312,6 +323,8 @@ namespace Programming
 					{
 						// TODO: Refactor this to use lists of BaseAgents everywhere, so we can support multiple-adjective filtering
 						"nearest" => World.GetClosestAgent(subjectNode.word, computer),
+						"emptiest" => World.GetAgentSortedBy(subjectNode.word, computer, "emptiest"),
+						"fullest" => World.GetAgentSortedBy(subjectNode.word, computer, "fullest"),
 						_ => throw new Exception($"Unhandled adjective in qualifying node {_adjective.word}")
 					};
 					break;

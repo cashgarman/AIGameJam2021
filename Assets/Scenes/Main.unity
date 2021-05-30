@@ -349,7 +349,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1110982869205046323, guid: 99a48dbb19727e240a364349da735edc, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1110982871100498023, guid: 99a48dbb19727e240a364349da735edc, type: 3}
       propertyPath: m_LocalRotation.w
@@ -390,7 +390,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1235419449649750915, guid: b321d57400fe95d46bfd7a0fcf0acbbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -336.7687
+      value: -345.49
       objectReference: {fileID: 0}
     - target: {fileID: 1235419449649750915, guid: b321d57400fe95d46bfd7a0fcf0acbbc, type: 3}
       propertyPath: m_LocalPosition.y
@@ -398,7 +398,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1235419449649750915, guid: b321d57400fe95d46bfd7a0fcf0acbbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 80.35198
+      value: 74.5
       objectReference: {fileID: 0}
     - target: {fileID: 1235419449649750915, guid: b321d57400fe95d46bfd7a0fcf0acbbc, type: 3}
       propertyPath: m_LocalRotation.w
@@ -434,7 +434,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1235419449649750927, guid: b321d57400fe95d46bfd7a0fcf0acbbc, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1235419449880663886, guid: b321d57400fe95d46bfd7a0fcf0acbbc, type: 3}
       propertyPath: m_LocalRotation.w
@@ -454,11 +454,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1235419450489923924, guid: b321d57400fe95d46bfd7a0fcf0acbbc, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 0.493
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1235419450489923924, guid: b321d57400fe95d46bfd7a0fcf0acbbc, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b321d57400fe95d46bfd7a0fcf0acbbc, type: 3}
@@ -2078,7 +2078,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1235419449649750927, guid: b321d57400fe95d46bfd7a0fcf0acbbc, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1235419449880663886, guid: b321d57400fe95d46bfd7a0fcf0acbbc, type: 3}
       propertyPath: m_LocalRotation.w
@@ -2098,11 +2098,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1235419450489923924, guid: b321d57400fe95d46bfd7a0fcf0acbbc, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 0.493
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1235419450489923924, guid: b321d57400fe95d46bfd7a0fcf0acbbc, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b321d57400fe95d46bfd7a0fcf0acbbc, type: 3}
@@ -2115,7 +2115,14 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2453028887489282060, guid: 4d703ecfaaa24e64d85634511b1f7ae1, type: 3}
       propertyPath: code
-      value: goto closest charger
+      value: 'goto leastcharged battery
+
+        pickup battery
+
+        goto closest
+        charger
+
+        drop battery'
       objectReference: {fileID: 0}
     - target: {fileID: 2453028887489282060, guid: 4d703ecfaaa24e64d85634511b1f7ae1, type: 3}
       propertyPath: serializationData.Prefab

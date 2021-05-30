@@ -45,7 +45,8 @@ public class Robot : Agent<Robot>, IComputer
     private IPickup _holding;
     
     // Brain
-    [SerializeField] private string code;
+    [SerializeField] private bool _runCode = false;
+    [SerializeField, TextArea(5, 20)] private string code;
     private Program _program;
 
     private void Awake()
@@ -56,10 +57,16 @@ public class Robot : Agent<Robot>, IComputer
     void Start()
     {
         BatteryLevel = _maxBatteryLevel;
-        // GotoState<RobotIdleState>(this);
 
-        _program = Compiler.Compile(code);
-        _program.Run(this);
+        if (_runCode)
+        {
+            _program = Compiler.Compile(code);
+            _program.Run(this);
+        }
+        else
+        {
+            GotoState<RobotIdleState>(this);
+        }
     }
 
     protected override void Update()
@@ -82,7 +89,7 @@ public class Robot : Agent<Robot>, IComputer
     private void UpdateUI()
     {
         // Update the robot's name and state
-        _nameText.text = $"{Name}\n<size=50%>{_currentState.Name}</size>";
+        _nameText.text = $"{Name}\n<size=50%>{(_currentState != null ? _currentState.Name : "None")}</size>";
         
         // Update the battery remaining level
         _energyDisplay.value = BatteryLevel / _maxBatteryLevel;
@@ -154,5 +161,14 @@ public class Robot : Agent<Robot>, IComputer
                 MoveToObjectWithCallback(agent.transform);
                 break;
         }
+    }
+    
+    public override float GetOrderBy(string sortType)
+    {
+        return sortType switch
+        {
+            "fullest" => _batteryLevel / _maxBatteryLevel,
+            "emptiest" => 1f - _batteryLevel / _maxBatteryLevel
+        };
     }
 }
