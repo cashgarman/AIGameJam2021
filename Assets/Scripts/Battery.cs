@@ -1,4 +1,5 @@
 using System;
+using Programming;
 using States;
 using TMPro;
 using UnityEngine;
@@ -7,6 +8,9 @@ using UnityEngine.UI;
 public class Battery : Agent<Battery>, IPickup
 {
     public override string Name => "Battery";
+    public override Transform PluginSlot => null;
+    public override bool IsPluggedIn { get; set; }
+    public override BaseAgent PluggedIn { get; set; }
 
     public bool IsPickedUp { get; set; }
 
@@ -87,13 +91,15 @@ public class Battery : Agent<Battery>, IPickup
         };
     }
     
-    public override bool FilterBy(string filter)
+    public override bool FilterBy(string filter, IComputer computer)
     {
         return filter switch
         {
             "empty" => _charge <= _chargeLowThreshold, // TODO: Should this be zero, or close enough
             "full" => _charge >= _chargeHighThreshold, // TODO: Should this be zero, or close enough
-            _ => throw new Exception($"Invalid filter provided: {filter}")
+            "next" => !computer.HasInteractedWithRecently(this),
+            "unplugged" => !IsPluggedIn,
+            _ => throw new Exception($"Invalid filter provided to {GetType().Name}: {filter}")
         };
     }
 }

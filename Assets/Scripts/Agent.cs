@@ -1,16 +1,38 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Programming;
 using Sirenix.OdinInspector;
+using UnityEngine;
+
+public class AgentInteraction
+{
+	public BaseAgent Agent { get; }
+	public float TimeInteractedWith { get; }
+
+	public AgentInteraction(BaseAgent agent)
+	{
+		Agent = agent;
+		TimeInteractedWith = Time.time;
+	}
+}
 
 public abstract class BaseAgent : SerializedMonoBehaviour
 {
+	public abstract Transform PluginSlot { get; }
 	public abstract string Name { get; }
+	public abstract bool IsPluggedIn { get; set; }
+	public abstract BaseAgent PluggedIn { get; set; }
+
 	public abstract float GetOrderBy(string sortType);
-	public abstract bool FilterBy(string filter);
+	public abstract bool FilterBy(string filter, IComputer computer);
 }
 
 public abstract class Agent<AgentType> : BaseAgent where AgentType : BaseAgent
 {
 	protected AgentState<AgentType> _currentState;
+	private List<AgentInteraction> _recentlyInteractedAgents = new List<AgentInteraction>();
+	[SerializeField] private float _agentInteractionCooldown = 5f;
 
 	public void GotoState(AgentType agent, Type newStateType, params object[] args)
 	{
@@ -38,10 +60,30 @@ public abstract class Agent<AgentType> : BaseAgent where AgentType : BaseAgent
 	protected virtual void Update()
 	{
 		_currentState?.OnTick();
+		
+		// Update the recently interacted with agents list
+		foreach (var interactedAgent in _recentlyInteractedAgents.ToArray())
+		{
+			// If enough time has passed
+			if (Time.time - interactedAgent.TimeInteractedWith >= _agentInteractionCooldown)
+				_recentlyInteractedAgents.Remove(interactedAgent);
+		}
 	}
 
 	protected bool IsInState<T>() where T : BaseState
 	{
 		return _currentState.GetType().IsAssignableFrom(typeof(T)) || _currentState.GetType().IsSubclassOf(typeof(T));
+	}
+	
+	public bool HasInteractedWithRecently(BaseAgent agent)
+	{
+		// If the agent is in the recently interacted with list
+		return _recentlyInteractedAgents.Any(recentlyInteractedAgent => recentlyInteractedAgent.Agent == agent);
+	}
+
+	public void AddAgentInteraction(BaseAgent agent)
+	{
+		// Add the agent to the list of agents recently interacted with
+		_recentlyInteractedAgents.Add(new AgentInteraction(agent));
 	}
 }

@@ -1,11 +1,17 @@
+using System;
+using Programming;
 using States;
 using UnityEngine;
 
 public class Charger : Agent<Charger>
 {
     public override string Name => "Charger";
+    public override Transform PluginSlot => _pluginSlot;    // TODO: Add multiple plugin slots
+    public override bool IsPluggedIn { get; set; }
+    public override BaseAgent PluggedIn { get; set; }
 
     [SerializeField] private float _chargePerSecond;
+    [SerializeField] private Transform _pluginSlot;
     public float ChargePerSecond => _chargePerSecond;
 
     void Start()
@@ -30,8 +36,12 @@ public class Charger : Agent<Charger>
         return 1;
     }
 
-    public override bool FilterBy(string filter)
+    public override bool FilterBy(string filter, IComputer computer)
     {
-        return true;
+        return filter switch
+        {
+            "next" => !computer.HasInteractedWithRecently(this),
+            _ => throw new Exception($"Invalid filter provided to {GetType().Name}: {filter}")
+        };
     }
 }

@@ -9,6 +9,9 @@ using UnityEngine.UI;
 public class Robot : Agent<Robot>, IComputer
 {
     public override string Name => name;
+    public override Transform PluginSlot => _pluginSlot;
+    public override bool IsPluggedIn { get; set; }
+    public override BaseAgent PluggedIn { get; set; }
 
     // Energy
     [SerializeField] private float _maxBatteryLevel;
@@ -29,7 +32,8 @@ public class Robot : Agent<Robot>, IComputer
     public bool FullyCharged => _batteryLevel >= 0.99f * _maxBatteryLevel;
     public bool IsBatteryLow => _batteryLevel <= _batteryLowLevel;
     public float MinChargedBatteryLevel => _minChargedBatteryLevel;
-    
+    [SerializeField] private float _batteryLevelOverride;
+
     // UI
     [SerializeField] private Slider _energyDisplay;
     [SerializeField] private TMP_Text _nameText;
@@ -43,8 +47,9 @@ public class Robot : Agent<Robot>, IComputer
 
     // Inventory
     [SerializeField] private Transform _hands;
+    [SerializeField] private Transform _pluginSlot;
     public IPickup _holding;
-    
+
     // Brain
     [SerializeField] private bool _runCode = false;
     [SerializeField, TextArea(5, 20)] private string code;
@@ -53,7 +58,7 @@ public class Robot : Agent<Robot>, IComputer
     private void Awake()
     {
         _navAgent = GetComponent<NavMeshAgent>();
-        BatteryLevel = _maxBatteryLevel;
+        BatteryLevel = _batteryLevelOverride != 0 ? _batteryLevelOverride : _maxBatteryLevel;
     }
 
     void Start()
@@ -156,15 +161,38 @@ public class Robot : Agent<Robot>, IComputer
         // TODO: Wait for any animations and whatnot
         onComplete?.Invoke();
     }
-
-    public void ExecuteCommand(string command, object argument)
+    
+    private void Plugin(BaseAgent subjectA, BaseAgent subjectB, Action onComplete)
     {
-        Debug.Log($"Attempting to execute command '{command}' with arguement '{argument}' on {name}");
+        // The robot should be holding subject A
+        if (_holding != subjectA)
+            throw new Exception($"Tried to plug in something {name} wasn't holding");
+        
+        // Turn off subject A's physics
+        var rigidbody = subjectA.gameObject.GetComponent<Rigidbody>();
+        rigidbody.useGravity = false;
+        rigidbody.isKinematic = true;
+        
+        // Plug subject A into subject B
+        Debug.Log($"{name} is plugging {subjectA} into {subjectB}");
+        _holding = null;
+        subjectA.transform.SetParent(subjectB.PluginSlot != null ? subjectB.PluginSlot : subjectB.transform);
+        subjectA.transform.localPosition = Vector3.zero;
+        subjectA.IsPluggedIn = true;
+        subjectB.PluggedIn = subjectA;
+        
+        // TODO: Wait for any animations and whatnot
+        onComplete?.Invoke();
+    }
+
+    public void ExecuteCommand(string command, params object[] arguments)
+    {
+        Debug.Log($"Attempting to execute command '{command}' with arguments '{string.Join(", ", arguments)}' on {name}");
         
         switch (command)
         {
             case "goto":
-                var agent = argument as BaseAgent;
+                var agent = arguments[0] as BaseAgent;
                 
                 // If a valid agent couldn't be found (there might not be one available right now)
                 if (agent == null)
@@ -180,10 +208,11 @@ public class Robot : Agent<Robot>, IComputer
                     _program.GotoNextLine();
                     _program.RunCurrentLine(this);
                 });
+                AddAgentInteraction(agent);
                 break;
             
             case "pickup":
-                var pickupTarget = argument as IPickup;
+                var pickupTarget = arguments[0] as IPickup;
                 
                 // If a valid agent couldn't be found (there might not be one available right now)
                 if (pickupTarget == null)
@@ -199,10 +228,11 @@ public class Robot : Agent<Robot>, IComputer
                     _program.GotoNextLine();
                     _program.RunCurrentLine(this);
                 });
+                AddAgentInteraction(pickupTarget as BaseAgent);
                 break;
             
             case "drop":
-                var dropTarget = argument as IPickup;
+                var dropTarget = arguments[0] as IPickup;
                 
                 // If a valid agent couldn't be found (there might not be one available right now)
                 if (dropTarget == null)
@@ -218,10 +248,41 @@ public class Robot : Agent<Robot>, IComputer
                     _program.GotoNextLine();
                     _program.RunCurrentLine(this);
                 });
+                AddAgentInteraction(dropTarget as BaseAgent);
+                break;
+            
+            case "plug":
+                var subjectA = arguments[0] as BaseAgent;
+                var subjectB = arguments[1] as BaseAgent;
+                
+                // If valid agents couldn't be found (there might not be any available right now)
+                if (subjectA == null || subjectB == null)
+                {
+                    // Wait a bit then try to run the same line again
+                    // TODO: Find a better place to put this magic number
+                    StartCoroutine(Util.Delay(1f, () => _program.RunCurrentLine(this)));
+                    return;
+                }
+
+                // The robot should be holding subject A
+                if (_holding != subjectA)
+                    throw new Exception($"Tried to plug in something {name} wasn't holding");
+                
+                // TODO: Subject B should be in range
+                
+                Plugin(subjectA, subjectB, () =>
+                {
+                    _program.GotoNextLine();
+                    _program.RunCurrentLine(this);
+                });
+                
+                // TODO: Are these necessary, will they cause problems?
+                AddAgentInteraction(subjectA);
+                AddAgentInteraction(subjectB);
                 break;
         }
     }
-    
+
     public override float GetOrderBy(string sortType)
     {
         return sortType switch
@@ -231,13 +292,14 @@ public class Robot : Agent<Robot>, IComputer
         };
     }
 
-    public override bool FilterBy(string filter)
+    public override bool FilterBy(string filter, IComputer computer)
     {
         return filter switch
         {
             "empty" => _batteryLevel <= _batteryLowLevel, // TODO: Should this be zero, or close enough
             "full" => _batteryLevel >= _batteryHighLevel, // TODO: Should this be zero, or close enough
-            _ => throw new Exception($"Invalid filter provided: {filter}")
+            "next" => !computer.HasInteractedWithRecently(this),
+            _ => throw new Exception($"Invalid filter provided to {GetType().Name}: {filter}")
         };
     }
 }

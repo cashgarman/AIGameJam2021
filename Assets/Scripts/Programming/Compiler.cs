@@ -1,12 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Programming;
 using Sirenix.OdinInspector;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using Token = Programming.Token;
 
 namespace Programming
 {
@@ -24,15 +22,19 @@ namespace Programming
 			Verb,
 			Adjective,
 			Filter,
+			Interaction,
+			InteractionDeliminator
 		}
 
-		public string Word { get; set; }
-		public TokenType Type { get; set; }
-		
-		public Token(string word, TokenType tokenType)
+		public string Word { get; }
+		public TokenType Type { get; }
+		public string Deliminator { get; }
+
+		public Token(string word, TokenType tokenType, string deliminator = null)
 		{
 			Word = word;
 			Type = tokenType;
+			Deliminator = deliminator;
 		}
 
 		public override string ToString()
@@ -46,6 +48,7 @@ namespace Programming
 	{
 		public string word;
 		public Token.TokenType type;
+		public string deliminator;
 		public string[] synonyms;
 	}
 
@@ -125,7 +128,7 @@ namespace Programming
 			{
 				// If the word matches any of the token's synonyms
 				if (token.word.ToLower() == word || token.synonyms.Select(w => w.ToLower()).Contains(word))
-					return new Token(token.word, token.type);
+					return new Token(token.word, token.type, token.deliminator);
 			}
 			
 			throw new Exception($"Couldn't find a matching token for word '{word}'");
@@ -163,6 +166,13 @@ namespace Programming
 				case Token.TokenType.Filter:
 					// (Filter) [Subject]
 					return new PredicateNode(new FilterNode(first), CreateNode(rest));
+				case Token.TokenType.Interaction:
+					// (Interaction) [SubjectA] (Deliminator) [SubjectB]
+					var subjectA = rest.TakeWhile(token => token.Type != Token.TokenType.InteractionDeliminator && token.Word != first.Deliminator).ToArray();
+					var subjectB = rest.SkipWhile(token => token.Type != Token.TokenType.InteractionDeliminator && token.Word != first.Deliminator).Skip(1).ToArray();
+					Debug.Log($"Subject A tokens: {string.Join(", ", subjectA.Select(t => t.Word))}");
+					Debug.Log($"Subject B tokens: {string.Join(", ", subjectB.Select(t => t.Word))}");
+					return new InteractionNode(new VerbNode(first), CreateNode(subjectA), CreateNode(subjectB));
 				default:
 					throw new ArgumentOutOfRangeException();
 			}
@@ -210,6 +220,10 @@ namespace Programming
 
 		public static Program Compile(string code)
 		{
+			// Handle empty programs
+			if (string.IsNullOrEmpty(code))
+				return new Program();
+			
 			// Break the program first into lines of code, and compile each line
 			var lines = code.Split('\n');
 			Debug.Log($"Code has {lines.Length} lines of code");
@@ -262,12 +276,15 @@ namespace Programming
 
 		public void AddLine(string code, BranchNode rootNode)
 		{
-			Debug.Log($"Added a line of code '{code}' to the program with root node: {rootNode.ToString()}");
+			Debug.Log($"Added a line of code '{code}' to the program with root node: {rootNode.Word}");
 			_lineEntryPoints.Add(new LineOfCode(code, rootNode));
 		}
 
 		public void RunCurrentLine(IComputer computer)
 		{
+			if (!_lineEntryPoints.Any())
+				return;
+			
 			if (_halted)
 				return;
 			
@@ -300,7 +317,8 @@ namespace Programming
 	{
 		Transform transform { get; }
 		string name { get; set; }
-		void ExecuteCommand(string command, object argument);
+		void ExecuteCommand(string command, params object[] arguments);
+		bool HasInteractedWithRecently(BaseAgent agent);
 	}
 
 	internal class AdjectiveNode : LeafNode
@@ -324,7 +342,7 @@ namespace Programming
 		}
 	}
 	
-	internal class FilterNode : LeafNode
+	internal class  FilterNode : LeafNode
 	{
 		public FilterNode(Token token) : base(token)
 		{
@@ -338,6 +356,7 @@ namespace Programming
 
 		public ActionNode(VerbNode verb, Node subject)
 		{
+			Word = verb.Word;
 			_verb = verb;
 			_subject = subject;
 		}
@@ -349,7 +368,7 @@ namespace Programming
 			switch(_subject)
 			{
 				case SubjectNode subjectNode:
-					subject = World.GetRandomAgent(subjectNode.word);
+					subject = World.FindSubject(subjectNode, computer);
 					break;
 				
 				case QualifierNode qualifierNode:
@@ -359,7 +378,7 @@ namespace Programming
 			};
 			
 			// Tell the computer to run the verb on the subject
-			computer.ExecuteCommand(_verb.word, subject);
+			computer.ExecuteCommand(_verb.Word, subject);
 		}
 	}
 
@@ -371,6 +390,7 @@ namespace Programming
 
 		public QualifierNode(AdjectiveNode adjective, Node subject)
 		{
+			Word = adjective.Word;
 			_adjective = adjective;
 			_subject = subject;
 		}
@@ -383,11 +403,11 @@ namespace Programming
 			switch(_subject)
 			{
 				case SubjectNode subjectNode:
-					_foundSubject = _adjective.word switch
+					_foundSubject = _adjective.Word switch
 					{
 						// TODO: Refactor this to use lists of BaseAgents everywhere, so we can support multiple-adjective filtering
-						"nearest" => World.GetClosestAgent(subjectNode.word, computer),
-						_ => throw new Exception($"Unhandled adjective in qualifying node {_adjective.word}")
+						"nearest" => World.GetClosestAgent(subjectNode.Word, computer),
+						_ => throw new Exception($"Unhandled adjective in qualifying node {_adjective.Word}")
 					};
 					break;
 				case QualifierNode qualifierNode:
@@ -406,10 +426,12 @@ namespace Programming
 	{
 		private readonly FilterNode _filter;
 		private readonly Node _subject;
+		
 		private IEnumerable<BaseAgent> _foundSubjects;
 
 		public PredicateNode(FilterNode filter, Node subject)
 		{
+			Word = filter.Word;
 			_filter = filter;
 			_subject = subject;
 		}
@@ -418,29 +440,61 @@ namespace Programming
 
 		public override void Run(IComputer computer)
 		{
-			// Filter the available subjects
-			switch(_filter)
+			// Get the subject
+			switch(_subject)
 			{
-				case FilterNode filterNode:
-					_foundSubjects = filterNode.word switch
-					{
-						"empty" => World.GetClosestAgents(_subject.word, computer, "empty"),
-						"full" => World.GetClosestAgents(_subject.word, computer, "full"),
-						_ => throw new Exception($"Unhandled adjective in qualifying node {_filter.word}")
-					};
+				case SubjectNode subjectNode:
+					_foundSubjects = World.GetClosestAgents(subjectNode.Word, computer, _filter.Word);
+					break;
+				case PredicateNode predicateNode:
+					predicateNode.Run(computer);
+					_foundSubjects = World.FilterAgents(predicateNode.Subjects, computer, _filter.Word);
 					break;
 			};
+		}
+	}
+	
+	internal class InteractionNode : BranchNode
+	{
+		private readonly VerbNode _verb;
+		private readonly Node _subjectA;
+		private readonly Node _subjectB;
+		
+		private BaseAgent _foundSubjectA;
+		private BaseAgent _foundSubjectB;
+
+		public InteractionNode(VerbNode verb, Node subjectA, Node subjectB)
+		{
+			Word = verb.Word;
+			_verb = verb;
+			_subjectA = subjectA;
+			_subjectB = subjectB;
+		}
+
+		public override void Run(IComputer computer)
+		{
+			// Get subject A
+			_foundSubjectA = World.FindSubject(_subjectA, computer);
+			
+			// Get subject B
+			_foundSubjectB = World.FindSubject(_subjectB, computer);
+
+			// Debug.Log($"Found subject A: {_foundSubjectA?.Name}");
+			// Debug.Log($"Found subject B: {_foundSubjectB?.Name}");
+			
+			// Tell the computer to run the verb on the subject
+			computer.ExecuteCommand(_verb.Word, _foundSubjectA, _foundSubjectB);
 		}
 	}
 
 	[Serializable]
 	public abstract class Node
 	{
-		public string word;
+		public string Word;
 
 		public override string ToString()
 		{
-			return word;
+			return Word;
 		}
 	}
 
@@ -453,7 +507,7 @@ namespace Programming
 	{
 		protected LeafNode(Token token)
 		{
-			word = token.Word;
+			Word = token.Word;
 		}
 	}
 }

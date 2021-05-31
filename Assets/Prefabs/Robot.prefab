@@ -1,5 +1,35 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1278563425752973202
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 6282998253678473398}
+  m_Layer: 0
+  m_Name: PluginSlot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &6282998253678473398
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1278563425752973202}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.25, z: -0.5}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 2453028887489282062}
+  m_RootOrder: 2
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1884614976390899637
 GameObject:
   m_ObjectHideFlags: 0
@@ -124,6 +154,7 @@ Transform:
   m_Children:
   - {fileID: 4298013300413891352}
   - {fileID: 5650078788312785530}
+  - {fileID: 6282998253678473398}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -237,6 +268,7 @@ MonoBehaviour:
     - Name: _holding
       Entry: 6
       Data: 
+  _agentInteractionCooldown: 5
   _maxBatteryLevel: 100
   _idleBatteryDrainPerSecond: 2.5
   _movingBatteryDrainPerSecond: 7.5
@@ -248,15 +280,9 @@ MonoBehaviour:
   _nameText: {fileID: 7672193947048647506}
   _reachedDestinationThreshold: 1
   _hands: {fileID: 5650078788312785530}
+  _pluginSlot: {fileID: 6282998253678473398}
   _runCode: 1
-  code: 'goto nearest empty battery
-
-    pickup nearest battery
-
-    goto closest
-    charger
-
-    drop nearest battery'
+  code: goto nearest new battery
 --- !u!114 &1852212163
 MonoBehaviour:
   m_ObjectHideFlags: 0
