@@ -15,11 +15,6 @@ public class PopulateGrid : MonoBehaviour
         Populate();
     }
 
-    void Update()
-    {
-
-    }
-
     void Populate()
     {
         GameObject[] TCams = GameObject.FindGameObjectsWithTag("Cam");
