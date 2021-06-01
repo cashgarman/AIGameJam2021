@@ -1,8 +1,10 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Sirenix.OdinInspector;
 using TMPro;
+using UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -249,26 +251,37 @@ namespace Programming
 	{
 		public class LineOfCode
 		{
+			public enum LineStatus
+			{
+				Running,
+				Done,
+				Pending
+			}
+
 			public string Code { get; }
+			public LineStatus Status { get; set; }
 			private BranchNode RootNode { get; }
 
 			public LineOfCode(string code, BranchNode rootNode)
 			{
 				Code = code;
 				RootNode = rootNode;
+				Status = LineStatus.Pending;
 			}
 
 			public void Run(IComputer computer)
 			{
 				Debug.Log($"Running code '{Code}' on {computer.name}");
-				RootNode.Run(computer);
+				Status = LineStatus.Running;
+				RootNode.Run(computer, () => Status = LineStatus.Done);
 			}
 		}
 
-		private readonly List<LineOfCode> _lineEntryPoints = new List<LineOfCode>();
 		private int _currentLine = 0;
 		private bool _shouldLoop = true;
 		private bool _halted;
+
+		public List<LineOfCode> Lines { get; } = new List<LineOfCode>();
 
 		public Program()
 		{
@@ -277,19 +290,19 @@ namespace Programming
 		public void AddLine(string code, BranchNode rootNode)
 		{
 			Debug.Log($"Added a line of code '{code}' to the program with root node: {rootNode.Word}");
-			_lineEntryPoints.Add(new LineOfCode(code, rootNode));
+			Lines.Add(new LineOfCode(code, rootNode));
 		}
 
 		public void RunCurrentLine(IComputer computer)
 		{
-			if (!_lineEntryPoints.Any())
+			if (!Lines.Any())
 				return;
 			
 			if (_halted)
 				return;
 			
 			// Run the current line of code
-			_lineEntryPoints[_currentLine].Run(computer);
+			Lines[_currentLine].Run(computer);
 		}
 
 		public void GotoNextLine()
@@ -301,14 +314,24 @@ namespace Programming
 			_currentLine++;
 			
 			// Loop the program once it's reached the end
-			if (_currentLine == _lineEntryPoints.Count)
+			if (_currentLine == Lines.Count)
 			{
 				Debug.Log($"Program finished");
-				_currentLine = 0;
 				if (!_shouldLoop)
 				{
 					_halted = true;
 				}
+				
+				ResetProgram();				
+			}
+		}
+
+		private void ResetProgram()
+		{
+			_currentLine = 0;
+			foreach (var line in Lines)
+			{
+				line.Status = LineOfCode.LineStatus.Pending;
 			}
 		}
 	}
@@ -361,7 +384,7 @@ namespace Programming
 			_subject = subject;
 		}
 
-		public override void Run(IComputer computer)
+		public override void Run(IComputer computer, Action onFinishedCallback)
 		{
 			// Get the actual subject
 			BaseAgent subject = null;
@@ -372,13 +395,13 @@ namespace Programming
 					break;
 				
 				case QualifierNode qualifierNode:
-					qualifierNode.Run(computer);
+					qualifierNode.Run(computer, onFinishedCallback);
 					subject = qualifierNode.Subject;
 					break;
 			};
 			
 			// Tell the computer to run the verb on the subject
-			computer.ExecuteCommand(_verb.Word, subject);
+			computer.ExecuteCommand(_verb.Word, onFinishedCallback, subject);
 		}
 	}
 
@@ -397,7 +420,7 @@ namespace Programming
 
 		public BaseAgent Subject => _foundSubject;
 
-		public override void Run(IComputer computer)
+		public override void Run(IComputer computer, Action onFinishedCallback)
 		{
 			// Get the actual subject
 			switch(_subject)
@@ -406,16 +429,17 @@ namespace Programming
 					_foundSubject = _adjective.Word switch
 					{
 						// TODO: Refactor this to use lists of BaseAgents everywhere, so we can support multiple-adjective filtering
+						"random" => World.GetRandomAgent(subjectNode.Word, computer),
 						"nearest" => World.GetClosestAgent(subjectNode.Word, computer),
 						_ => throw new Exception($"Unhandled adjective in qualifying node {_adjective.Word}")
 					};
 					break;
 				case QualifierNode qualifierNode:
-					qualifierNode.Run(computer);
+					qualifierNode.Run(computer, onFinishedCallback);
 					_foundSubject = qualifierNode.Subject;
 					break;
 				case PredicateNode predicateNode:
-					predicateNode.Run(computer);
+					predicateNode.Run(computer, onFinishedCallback);
 					_foundSubject = predicateNode.Subjects.FirstOrDefault();
 					break;
 			};
@@ -438,7 +462,7 @@ namespace Programming
 
 		public IEnumerable<BaseAgent> Subjects => _foundSubjects;
 
-		public override void Run(IComputer computer)
+		public override void Run(IComputer computer, Action onFinishedCallback)
 		{
 			// Get the subject
 			switch(_subject)
@@ -447,7 +471,7 @@ namespace Programming
 					_foundSubjects = World.GetClosestAgents(subjectNode.Word, computer, _filter.Word);
 					break;
 				case PredicateNode predicateNode:
-					predicateNode.Run(computer);
+					predicateNode.Run(computer, onFinishedCallback);
 					_foundSubjects = World.FilterAgents(predicateNode.Subjects, computer, _filter.Word);
 					break;
 			};
@@ -471,7 +495,7 @@ namespace Programming
 			_subjectB = subjectB;
 		}
 
-		public override void Run(IComputer computer)
+		public override void Run(IComputer computer, Action onFinishedCallback)
 		{
 			// Get subject A
 			_foundSubjectA = World.FindSubject(_subjectA, computer);
@@ -483,7 +507,7 @@ namespace Programming
 			// Debug.Log($"Found subject B: {_foundSubjectB?.Name}");
 			
 			// Tell the computer to run the verb on the subject
-			computer.ExecuteCommand(_verb.Word, _foundSubjectA, _foundSubjectB);
+			computer.ExecuteCommand(_verb.Word, onFinishedCallback, _foundSubjectA, _foundSubjectB);
 		}
 	}
 
@@ -500,7 +524,7 @@ namespace Programming
 
 	public abstract class BranchNode : Node
 	{
-		public abstract void Run(IComputer computer);
+		public abstract void Run(IComputer computer, Action onFinishedCallback);
 	}
 
 	internal abstract class LeafNode : Node

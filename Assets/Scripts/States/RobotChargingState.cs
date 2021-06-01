@@ -32,8 +32,8 @@ namespace States
 			{
 				Debug.Log($"Robot fully charged");
 				
-				// Drop the battery
-				Agent.Drop(_battery);
+				// Unplug the battery
+				Agent.UnplugFromSelf(_battery, null);
 				
 				// Go back to idling
 				Agent.Idle();
@@ -44,10 +44,8 @@ namespace States
 			{
 				Debug.Log($"Battery fully drained");
 				
-				// TODO: Take the battery for charging
-				
-				// Drop the battery
-				Agent.Drop(_battery);
+				// Unplug the battery
+				Agent.UnplugFromSelf(_battery, null);
 				
 				// Go back to idling
 				Agent.Idle();

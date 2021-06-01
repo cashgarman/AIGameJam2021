@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Programming;
@@ -26,6 +27,20 @@ public abstract class BaseAgent : SerializedMonoBehaviour
 
 	public abstract float GetOrderBy(string sortType);
 	public abstract bool FilterBy(string filter, IComputer computer);
+
+	public virtual void OnClicked()
+	{
+	}
+
+	public virtual void OnObjectPluggedIn(BaseAgent subject)
+	{
+		PluggedIn = subject;
+	}
+
+	public virtual void OnObjectUnplugged(BaseAgent subject)
+	{
+		PluggedIn = null;
+	}
 }
 
 public abstract class Agent<AgentType> : BaseAgent where AgentType : BaseAgent

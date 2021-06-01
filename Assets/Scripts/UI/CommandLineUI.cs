@@ -1,0 +1,78 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Programming;
+using TMPro;
+using UnityEngine;
+
+namespace UI
+{
+    public class CommandLineUI : MonoBehaviour
+    {
+        [SerializeField] private GameObject _commandLineContainer;
+        [SerializeField] private TMP_InputField _commandLineInput;
+        [SerializeField] private CommandLineErrorUI _errorDisplay;
+
+        private bool _visible;
+        private List<string> _commandHistory = new List<string>();
+        private int _commandHistoryIndex;
+
+        void Update()
+        {
+            if (Input.GetKeyDown(KeyCode.Return))
+            {
+                if (!_visible)
+                {
+                    _commandLineContainer.SetActive(true);
+                    _commandLineInput.ActivateInputField();
+                    _visible = true;
+                }
+                else
+                {
+                    _commandLineInput.ActivateInputField();
+                    RunCommand();
+                }
+            }
+
+            if (Input.GetKeyDown(KeyCode.UpArrow))
+            {
+                if(_commandHistory.Any())
+                {
+                    _commandLineInput.text = _commandHistory[_commandHistoryIndex];
+                    _commandHistoryIndex = Math.Max(0, _commandHistoryIndex - 1);
+                }
+            }
+        }
+
+        public void RunCommand()
+        {
+            // Make sure there is a command entered
+            if (string.IsNullOrEmpty(_commandLineInput.text))
+                return;
+            
+            try
+            {
+                // Compile the command
+                var program = Compiler.Compile(_commandLineInput.text);
+
+                // Run the command on the currently controlled agent
+                program.RunCurrentLine(Game.ControlledAgent);
+                
+                // Clear the error
+                _errorDisplay.Hide();
+                
+                // Add the command to the history
+                _commandHistory.Add(_commandLineInput.text);
+                _commandHistoryIndex = _commandHistory.Count - 1;
+                
+                // Clear the command
+                _commandLineInput.text = "";
+            }
+            catch (Exception e)
+            {
+                // Display the error
+                _errorDisplay.Show(e.Message);
+            }
+        }
+    }
+}

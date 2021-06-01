@@ -23,9 +23,9 @@ public class World : MonoBehaviour
 		};
 	}
 
-	public static BaseAgent GetRandomAgent(string type)
+	public static BaseAgent GetRandomAgent(string type, IComputer computer)
 	{
-		return Util.RandomElement(FindObjectsOfType(GetTypeFromName(type))) as BaseAgent;
+		return Util.RandomElement(FindObjectsOfType(GetTypeFromName(type)).Where(a => a != computer)) as BaseAgent;
 	}
 
 	public static BaseAgent GetClosestAgent(string type, IComputer computer, string filter = null)

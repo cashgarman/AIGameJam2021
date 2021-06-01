@@ -1,8 +1,9 @@
+﻿using Programming;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Programming
+namespace UI
 {
     public class TokenUI : MonoBehaviour
     {

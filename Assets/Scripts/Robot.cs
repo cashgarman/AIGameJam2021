@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using Programming;
 using States;
 using TMPro;
@@ -44,6 +45,7 @@ public class Robot : Agent<Robot>, IComputer
     public float ReachedDestinationThreshold => _reachedDestinationThreshold;
     public bool HasReachedDestination => _navAgent.remainingDistance < _reachedDestinationThreshold;
     public NavMeshAgent NavAgent => _navAgent;
+    public Program Program => _program;
 
     // Inventory
     [SerializeField] private Transform _hands;
@@ -100,10 +102,11 @@ public class Robot : Agent<Robot>, IComputer
         _energyDisplay.value = BatteryLevel / _maxBatteryLevel;
     }
 
-    // public void MoveToPositionAndChangeState(Vector3 destination, Action onReached)
-    // {
-    //     GotoState<RobotMovingToPositionState>(this, destination, onReached);
-    // }
+    public void MoveToPositionWithCallback(Vector3 destination, Action onReached)
+    {
+        NavAgent.isStopped = false;
+        GotoState<RobotMovingToPositionState>(this, destination, onReached);
+    }
 
     public void MoveToObjectWithCallback(Transform target, Action onReached = null, Func<bool> shouldContinueProvider = null)
     {
@@ -179,20 +182,56 @@ public class Robot : Agent<Robot>, IComputer
         subjectA.transform.SetParent(subjectB.PluginSlot != null ? subjectB.PluginSlot : subjectB.transform);
         subjectA.transform.localPosition = Vector3.zero;
         subjectA.IsPluggedIn = true;
-        subjectB.PluggedIn = subjectA;
+        subjectB.OnObjectPluggedIn(subjectA);
         
         // TODO: Wait for any animations and whatnot
         onComplete?.Invoke();
+    }
+    
+    public void UnplugFromSelf(BaseAgent subject, Action onComplete)
+    {
+        // The robot should be plugged into the subject already
+        if (PluggedIn != subject)
+            throw new Exception($"Tried to unplug {name} that wasn't plugged into the robot");
+        
+        // Turn on the subject's physics
+        var rigidbody = subject.gameObject.GetComponent<Rigidbody>();
+        rigidbody.useGravity = true;
+        rigidbody.isKinematic = false;
+        
+        // Unplug the subject from the robot
+        Debug.Log($"{name} is unplugging {subject} from themselves");
+        subject.IsPluggedIn = false;
+        subject.transform.SetParent(null);
+        subject.OnObjectUnplugged(subject);
+        
+        // TODO: Wait for any animations and whatnot
+        onComplete?.Invoke();
+    }
+
+    public override void OnObjectPluggedIn(BaseAgent pluggedIn)
+    {
+        base.OnObjectPluggedIn(pluggedIn);
+        
+        // If the object is a battery
+        var battery = pluggedIn as Battery;
+        if (battery != null)
+        {
+            // Start charging from the battery
+            GotoState<RobotChargingState>(this, battery);
+        }
     }
 
     public void ExecuteCommand(string command, params object[] arguments)
     {
         Debug.Log($"Attempting to execute command '{command}' with arguments '{string.Join(", ", arguments)}' on {name}");
         
+        var onCompleteCallback = arguments[0] as Action;
+
         switch (command)
         {
             case "goto":
-                var agent = arguments[0] as BaseAgent;
+                var agent = arguments[1] as BaseAgent;
                 
                 // If a valid agent couldn't be found (there might not be one available right now)
                 if (agent == null)
@@ -207,12 +246,13 @@ public class Robot : Agent<Robot>, IComputer
                 {
                     _program.GotoNextLine();
                     _program.RunCurrentLine(this);
+                    onCompleteCallback();
                 });
                 AddAgentInteraction(agent);
                 break;
             
             case "pickup":
-                var pickupTarget = arguments[0] as IPickup;
+                var pickupTarget = arguments[1] as IPickup;
                 
                 // If a valid agent couldn't be found (there might not be one available right now)
                 if (pickupTarget == null)
@@ -227,12 +267,13 @@ public class Robot : Agent<Robot>, IComputer
                 {
                     _program.GotoNextLine();
                     _program.RunCurrentLine(this);
+                    onCompleteCallback();
                 });
                 AddAgentInteraction(pickupTarget as BaseAgent);
                 break;
             
             case "drop":
-                var dropTarget = arguments[0] as IPickup;
+                var dropTarget = arguments[1] as IPickup;
                 
                 // If a valid agent couldn't be found (there might not be one available right now)
                 if (dropTarget == null)
@@ -247,13 +288,14 @@ public class Robot : Agent<Robot>, IComputer
                 {
                     _program.GotoNextLine();
                     _program.RunCurrentLine(this);
+                    onCompleteCallback();
                 });
                 AddAgentInteraction(dropTarget as BaseAgent);
                 break;
             
             case "plug":
-                var subjectA = arguments[0] as BaseAgent;
-                var subjectB = arguments[1] as BaseAgent;
+                var subjectA = arguments[1] as BaseAgent;
+                var subjectB = arguments[2] as BaseAgent;
                 
                 // If valid agents couldn't be found (there might not be any available right now)
                 if (subjectA == null || subjectB == null)
@@ -274,6 +316,7 @@ public class Robot : Agent<Robot>, IComputer
                 {
                     _program.GotoNextLine();
                     _program.RunCurrentLine(this);
+                    onCompleteCallback();
                 });
                 
                 // TODO: Are these necessary, will they cause problems?
@@ -281,6 +324,11 @@ public class Robot : Agent<Robot>, IComputer
                 AddAgentInteraction(subjectB);
                 break;
         }
+    }
+
+    public override void OnClicked()
+    {
+        Debug.Log($"{name} was clicked");
     }
 
     public override float GetOrderBy(string sortType)
