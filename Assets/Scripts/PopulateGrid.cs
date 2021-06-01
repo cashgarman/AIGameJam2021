@@ -1,0 +1,36 @@
+﻿using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class PopulateGrid : MonoBehaviour
+{
+    public GameObject prefab; // This is our prefab object that will be exposed in the inspector
+
+    private int numberToCreate; // number of objects to create. Exposed in inspector
+
+    void Start()
+    {
+
+        Populate();
+    }
+
+    void Update()
+    {
+
+    }
+
+    void Populate()
+    {
+        GameObject[] TCams = GameObject.FindGameObjectsWithTag("Cam");
+        numberToCreate = TCams.Length;
+        GameObject newObj; // Create GameObject instance
+
+        for (int i = 0; i < numberToCreate; i++)
+        {
+            // Create new instances of our prefab until we've created as many as we specified
+            newObj = (GameObject)Instantiate(prefab, transform);
+            newObj.transform.GetChild(1).GetComponent<Text>().text = TCams[i].name;
+        }
+    }
+}
