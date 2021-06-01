@@ -406,6 +406,10 @@ public class Robot : Agent<Robot>, IComputer
                     _program.RunCurrentLine(this);
                 }));
                 break;
+            
+            case "idle":
+                Idle();
+                break;
         }
     }
 

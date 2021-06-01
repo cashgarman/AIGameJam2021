@@ -28,6 +28,7 @@ namespace Programming
 			InteractionDeliminator,
 			Newline,
 			Delay,
+			Idle,
 		}
 
 		public string Word { get; }
@@ -322,6 +323,8 @@ namespace Programming
 					return new DelayNode(new WaitUntilNode(first), CreateNode(rest) as ComparisonNode);
 				case Token.TokenType.Equality:
 					return new EqualityNode(first);
+				case Token.TokenType.Idle:
+					return new IdleNode();
 				default:
 					throw new ArgumentOutOfRangeException();
 			}
@@ -601,6 +604,13 @@ namespace Programming
 	internal class WaitUntilNode : LeafNode
 	{
 		public WaitUntilNode(Token token) : base(token)
+		{
+		}
+	}
+	
+	internal class IdleLeafNode : LeafNode
+	{
+		public IdleLeafNode(Token token) : base(token)
 		{
 		}
 	}
@@ -891,6 +901,25 @@ namespace Programming
 				_waiting = !_comparison.Run(computer);
 				yield return new WaitForEndOfFrame();
 			}
+		}
+	}
+	
+	internal class IdleNode : BranchNode
+	{
+		private bool _waiting;
+		public bool Waiting => _waiting;
+		
+		public IdleNode()
+		{
+			Word = "idle";
+		}
+
+		public override bool Run(IComputer computer)
+		{
+			computer.ExecuteCommand("idle", this);
+			
+			// HACK: This isn't used for non-if statements
+			return false;
 		}
 	}
 

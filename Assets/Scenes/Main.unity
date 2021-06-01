@@ -3038,6 +3038,106 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1196823194
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    m_TransformParent: {fileID: 1534518562}
+    m_Modifications:
+    - target: {fileID: 3174092951808964369, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_RootOrder
+      value: 14
+      objectReference: {fileID: 0}
+    - target: {fileID: 3174092951808964369, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3174092951808964369, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3174092951808964369, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3174092951808964369, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3174092951808964369, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3174092951808964369, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3174092951808964369, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3174092951808964369, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3174092951808964369, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3174092951808964369, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3348797369825251448, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_Name
+      value: CrimeBot (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 3348797369825251448, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4759738316173143118, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0.493
+      objectReference: {fileID: 0}
+    - target: {fileID: 4759738316173143118, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5707180387219456398, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: code
+      value: "goto random new battery\nif this robot is low\n\tgoto nearest battery\n\tpickup
+        battery\n\tplug battery into this robot\n\twaituntil this robot is charged\n\tunplug
+        battery from this robot"
+      objectReference: {fileID: 0}
+    - target: {fileID: 5707180387219456398, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: _batteryLevelOverride
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 5707180387219456398, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: serializationData.Prefab
+      value: 
+      objectReference: {fileID: 5707180387219456398, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+    - target: {fileID: 7010603941551846968, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: _highlight
+      value: 
+      objectReference: {fileID: 31412602}
+    - target: {fileID: 8966935316072717481, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0.493
+      objectReference: {fileID: 0}
+    - target: {fileID: 8966935316072717481, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+--- !u!4 &1196823195 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3174092951808964369, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+  m_PrefabInstance: {fileID: 1196823194}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1240928715
 GameObject:
   m_ObjectHideFlags: 0
@@ -3993,6 +4093,7 @@ Transform:
   - {fileID: 2058095702}
   - {fileID: 56211482}
   - {fileID: 7151539100803141982}
+  - {fileID: 1196823195}
   m_Father: {fileID: 0}
   m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -5603,9 +5704,8 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5707180387219456398, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
       propertyPath: code
-      value: "goto random new battery\nif this robot is low\n\tgoto nearest battery\n\tpickup
-        battery\n\tplug battery into this robot\n\twaituntil this robot is charged\n\tunplug
-        battery from this robot"
+      value: "sleep\nif nearest battery is low\n\tgoto nearest battery\n\tpickup
+        battery\n\tgoto nearest charger\n\tplug battery into charger"
       objectReference: {fileID: 0}
     - target: {fileID: 5707180387219456398, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
       propertyPath: _batteryLevelOverride
