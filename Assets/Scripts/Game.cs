@@ -9,6 +9,7 @@ public class Game : SerializedMonoBehaviour
 	private static Game _instance;
 	
 	[SerializeField] private IComputer _initiallyControlledAgent;
+	[SerializeField] private bool _mouseMovementEnabled;
 
 	public static IComputer ControlledAgent { get; set; }
 
@@ -20,7 +21,7 @@ public class Game : SerializedMonoBehaviour
 
 	private void Update()
 	{
-		if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+		if (_mouseMovementEnabled && Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
 		{
 			// CREDIT: https://answers.unity.com/questions/1386777/get-origin-of-plane-in-world-coordinates.html
 			if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out var hit))

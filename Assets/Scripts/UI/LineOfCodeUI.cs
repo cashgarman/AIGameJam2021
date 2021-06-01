@@ -1,4 +1,3 @@
-using System;
 using Programming;
 using TMPro;
 using UnityEngine;
@@ -8,9 +7,9 @@ namespace UI
 	public class LineOfCodeUI : MonoBehaviour
 	{
 		[SerializeField] private TMP_Text _codeText;
-		private Program.LineOfCode _lineOfCode;
+		private CodeLine _lineOfCode;
 
-		public void Populate(Program.LineOfCode lineOfCode)
+		public void Populate(CodeLine lineOfCode)
 		{
 			_lineOfCode = lineOfCode;
 			UpdateUI();
@@ -23,12 +22,12 @@ namespace UI
 
 		private void UpdateUI()
 		{
-			_codeText.text = _lineOfCode.Code;
+			_codeText.text = _lineOfCode.ToString();
 			_codeText.color = _lineOfCode.Status switch
 			{
-				Program.LineOfCode.LineStatus.Pending => Color.white,
-				Program.LineOfCode.LineStatus.Running => Color.yellow,
-				Program.LineOfCode.LineStatus.Done => Color.green,
+				CodeLine.LineStatus.Pending => Color.white,
+				CodeLine.LineStatus.Running => Color.yellow,
+				CodeLine.LineStatus.Done => Color.green,
 			};
 		}
 	}

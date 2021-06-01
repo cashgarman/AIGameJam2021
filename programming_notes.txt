@@ -1,0 +1,39 @@
+goto random new battery
+if battery is low
+	goto nearest charger
+	plug self into charger
+if self is attacked
+	goto home
+
+goto (Verb)
+random (Adjective)
+next (Filter)
+battery (Noun)
+(Newline)
+
+if (Conditional)
+battery (Noun)
+is (Comparison)
+empty (Filter)
+(Newline)
+
+	goto (Verb)
+	nearest (Adjective)
+	charger (Noun)
+	(Newline)
+
+	plug (Interaction)
+	self (Noun)
+	into (InteractionDeliminator)
+	charger (Noun)
+	(Newline)
+
+if (Conditional)
+self (Noun)
+is (Comparison)
+attacked (Filter)
+(Newline)
+
+	goto (Verb)
+	home (Noun)
+	(Newline)

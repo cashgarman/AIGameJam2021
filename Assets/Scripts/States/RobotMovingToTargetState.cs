@@ -28,7 +28,7 @@ namespace States
 		public override void OnTick()
 		{
 			// If the robot is holding the target it's trying to reach
-			if (_target == Agent._holding)
+			if (_target == Agent.Holding)
 			{
 				Debug.Log($"reached");
 				return;

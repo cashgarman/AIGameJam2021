@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Programming;
 using UnityEngine;
 
@@ -12,7 +11,7 @@ public class World : MonoBehaviour
 		Time.timeScale = Input.GetKey(KeyCode.Tab) ? 20f : 1f;
 	}
 
-	private static Type GetTypeFromName(string type)
+	private static Type GetTypeFromName(string type, IComputer computer)
 	{
 		return type switch
 		{
@@ -25,28 +24,36 @@ public class World : MonoBehaviour
 
 	public static BaseAgent GetRandomAgent(string type, IComputer computer)
 	{
-		return Util.RandomElement(FindObjectsOfType(GetTypeFromName(type)).Where(a => a != computer)) as BaseAgent;
+		return Util.RandomElement(FindObjectsOfType(GetTypeFromName(type, computer)).Where(a => a != computer)) as BaseAgent;
 	}
 
-	public static BaseAgent GetClosestAgent(string type, IComputer computer, string filter = null)
+	public static BaseAgent GetClosestAgent(string type, IComputer computer, string filter = null, bool includeSelf = false)
 	{
-		return FindObjectsOfType(GetTypeFromName(type)).Select(a => a as BaseAgent)
-			.Where(a => a != computer)	// NOTE: What if we want to get ourselves as the closest agent?
+		return FindObjectsOfType(GetTypeFromName(type, computer)).Select(a => a as BaseAgent)
+			.Where(a => a != computer || includeSelf)
+			.OrderBy(a => Vector3.Distance(a.transform.position, computer.transform.position))
+			.FirstOrDefault();
+	}
+	
+	public static BaseAgent GetClosestAgent(IEnumerable<BaseAgent> agents, IComputer computer, bool includeSelf = false)
+	{
+		return agents
+			.Where(a => a != computer || includeSelf)
 			.OrderBy(a => Vector3.Distance(a.transform.position, computer.transform.position))
 			.FirstOrDefault();
 	}
 
 	public static BaseAgent GetAgentSortedBy(string type, IComputer computer, string sortType)
 	{
-		return FindObjectsOfType(GetTypeFromName(type)).Select(a => a as BaseAgent)
+		return FindObjectsOfType(GetTypeFromName(type, computer)).Select(a => a as BaseAgent)
 			.OrderBy(a => a.GetOrderBy(sortType))
 			.FirstOrDefault();
 	}
 
-	public static IEnumerable<BaseAgent> GetClosestAgents(string type, IComputer computer, string filter)
+	public static IEnumerable<BaseAgent> GetClosestAgents(string type, IComputer computer, string filter, bool includeSelf = false)
 	{
-		return FindObjectsOfType(GetTypeFromName(type)).Select(a => a as BaseAgent)
-			.Where(a => a != computer)	// NOTE: What if we want to get ourselves as the closest agent?
+		return FindObjectsOfType(GetTypeFromName(type, computer)).Select(a => a as BaseAgent)
+			.Where(a => a != computer || includeSelf)
 			.Where(a => a.FilterBy(filter, computer))
 			.OrderBy(a => Vector3.Distance(a.transform.position, computer.transform.position));
 	}
@@ -62,6 +69,9 @@ public class World : MonoBehaviour
 		{
 			case SubjectNode subjectNode:
 				return GetClosestAgent(subjectNode.Word, computer);
+			case PredicateNode predicateNode:
+				predicateNode.Run(computer);
+				return predicateNode.Subjects.FirstOrDefault();
 		};
 
 		return null;

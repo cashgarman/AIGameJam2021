@@ -37,10 +37,10 @@ namespace UI
 		private void PopulateCode(Program program)
 		{
 			_codeList.ClearChildren();
-			foreach (var lineOfCode in program.Lines)
+			foreach (var line in program.CurrentLines)
 			{
 				var newLine = Instantiate(_lineOfCodePrefab, _codeList);
-				newLine.Populate(lineOfCode);
+				newLine.Populate(line);
 			}
 		}
 	}

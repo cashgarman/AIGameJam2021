@@ -1,5 +1,7 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using Programming;
 using States;
 using TMPro;
@@ -50,7 +52,7 @@ public class Robot : Agent<Robot>, IComputer
     // Inventory
     [SerializeField] private Transform _hands;
     [SerializeField] private Transform _pluginSlot;
-    public IPickup _holding;
+    public IPickup Holding { get; private set; }
 
     // Brain
     [SerializeField] private bool _runCode = false;
@@ -68,6 +70,7 @@ public class Robot : Agent<Robot>, IComputer
         if (_runCode)
         {
             _program = Compiler.Compile(code);
+            _program.StartMain();
             _program.RunCurrentLine(this);
         }
         else
@@ -81,6 +84,23 @@ public class Robot : Agent<Robot>, IComputer
         base.Update();
 
         UpdateUI();
+        
+        // If the robot's program isn't currently interrupted
+        if (_program is {Interrupted: false})
+        {
+            // Foreach if statement in the program
+            foreach (var ifStatement in _program.Sections.Where(s => s.Type == CodeSection.BlockType.Conditional))
+            {
+                // Check if the if statement should run
+                Debug.Log($"Checking if if statement '{ifStatement.Lines[0]}' should run");
+                if (ifStatement.Lines[0].Run(this))
+                {
+                    _program.InterruptAndJumpToSection(ifStatement);
+                    _program.RunCurrentLine(this);
+                    break;
+                }
+            }
+        }
         
         HandleDebugControls();
     }
@@ -96,7 +116,8 @@ public class Robot : Agent<Robot>, IComputer
     private void UpdateUI()
     {
         // Update the robot's name and state
-        _nameText.text = $"{Name}\n<size=50%>{(_currentState != null ? _currentState.Name : "None")}</size>";
+        // _nameText.text = $"{Name}\n<size=50%>{(_currentState != null ? _currentState.Name : "None")}</size>";
+        _nameText.text = Name;
         
         // Update the battery remaining level
         _energyDisplay.value = BatteryLevel / _maxBatteryLevel;
@@ -126,8 +147,8 @@ public class Robot : Agent<Robot>, IComputer
 
     public void PickUp(IPickup pickup, Action onComplete = null)
     {
-        if (_holding != null)
-            throw new Exception($"Tried to pick up {pickup.name} while already holding {_holding.name}");
+        if (Holding != null)
+            throw new Exception($"Tried to pick up {pickup.name} while already holding {Holding.name}");
 
         // Turn off the pickup's physics
         var rigidbody = pickup.gameObject.GetComponent<Rigidbody>();
@@ -136,7 +157,7 @@ public class Robot : Agent<Robot>, IComputer
         
         // Pickup the object
         Debug.Log($"{name} picked up {pickup.name}");
-        _holding = pickup;
+        Holding = pickup;
         pickup.transform.SetParent(_hands);
         pickup.transform.localPosition = Vector3.zero;
         pickup.IsPickedUp = true;
@@ -147,7 +168,7 @@ public class Robot : Agent<Robot>, IComputer
 
     public void Drop(IPickup pickup, Action onComplete = null)
     {
-        if (_holding != pickup)
+        if (Holding != pickup)
             throw new Exception($"Tried to drop {pickup.name} that wasn't holding");
 
         // Turn on the pickup's physics
@@ -157,7 +178,7 @@ public class Robot : Agent<Robot>, IComputer
         
         // Drop the object
         Debug.Log($"{name} dropped {pickup.name}");
-        _holding = null;
+        Holding = null;
         pickup.transform.SetParent(null);
         pickup.IsPickedUp = false;
         
@@ -168,7 +189,7 @@ public class Robot : Agent<Robot>, IComputer
     private void Plugin(BaseAgent subjectA, BaseAgent subjectB, Action onComplete)
     {
         // The robot should be holding subject A
-        if (_holding != subjectA)
+        if (Holding != subjectA)
             throw new Exception($"Tried to plug in something {name} wasn't holding");
         
         // Turn off subject A's physics
@@ -178,7 +199,7 @@ public class Robot : Agent<Robot>, IComputer
         
         // Plug subject A into subject B
         Debug.Log($"{name} is plugging {subjectA} into {subjectB}");
-        _holding = null;
+        Holding = null;
         subjectA.transform.SetParent(subjectB.PluginSlot != null ? subjectB.PluginSlot : subjectB.transform);
         subjectA.transform.localPosition = Vector3.zero;
         subjectA.IsPluggedIn = true;
@@ -226,12 +247,10 @@ public class Robot : Agent<Robot>, IComputer
     {
         Debug.Log($"Attempting to execute command '{command}' with arguments '{string.Join(", ", arguments)}' on {name}");
         
-        var onCompleteCallback = arguments[0] as Action;
-
         switch (command)
         {
             case "goto":
-                var agent = arguments[1] as BaseAgent;
+                var agent = arguments[0] as BaseAgent;
                 
                 // If a valid agent couldn't be found (there might not be one available right now)
                 if (agent == null)
@@ -244,15 +263,19 @@ public class Robot : Agent<Robot>, IComputer
                 
                 MoveToObjectWithCallback(agent.transform, () =>
                 {
-                    _program.GotoNextLine();
-                    _program.RunCurrentLine(this);
-                    onCompleteCallback();
+                    // If the program isn't currently interrupted
+                    // if (!_program.Interrupted)
+                    // {
+                        // Run the next line of code
+                        _program.GotoNextLine();
+                        _program.RunCurrentLine(this);
+                    // }
                 });
                 AddAgentInteraction(agent);
                 break;
             
             case "pickup":
-                var pickupTarget = arguments[1] as IPickup;
+                var pickupTarget = arguments[0] as IPickup;
                 
                 // If a valid agent couldn't be found (there might not be one available right now)
                 if (pickupTarget == null)
@@ -265,15 +288,19 @@ public class Robot : Agent<Robot>, IComputer
                 
                 PickUp(pickupTarget, () =>
                 {
-                    _program.GotoNextLine();
-                    _program.RunCurrentLine(this);
-                    onCompleteCallback();
+                    // If the program isn't currently interrupted
+                    // if (!_program.Interrupted)
+                    // {
+                        // Run the next line of code
+                        _program.GotoNextLine();
+                        _program.RunCurrentLine(this);
+                    // }
                 });
                 AddAgentInteraction(pickupTarget as BaseAgent);
                 break;
             
             case "drop":
-                var dropTarget = arguments[1] as IPickup;
+                var dropTarget = arguments[0] as IPickup;
                 
                 // If a valid agent couldn't be found (there might not be one available right now)
                 if (dropTarget == null)
@@ -286,19 +313,23 @@ public class Robot : Agent<Robot>, IComputer
                 
                 Drop(dropTarget, () =>
                 {
-                    _program.GotoNextLine();
-                    _program.RunCurrentLine(this);
-                    onCompleteCallback();
+                    // If the program isn't currently interrupted
+                    // if (!_program.Interrupted)
+                    // {
+                        // Run the next line of code
+                        _program.GotoNextLine();
+                        _program.RunCurrentLine(this);
+                    // }
                 });
                 AddAgentInteraction(dropTarget as BaseAgent);
                 break;
             
             case "plug":
-                var subjectA = arguments[1] as BaseAgent;
-                var subjectB = arguments[2] as BaseAgent;
+                var plugSubjectA = arguments[0] as BaseAgent;
+                var plugSubjectB = arguments[1] as BaseAgent;
                 
                 // If valid agents couldn't be found (there might not be any available right now)
-                if (subjectA == null || subjectB == null)
+                if (plugSubjectA == null || plugSubjectB == null)
                 {
                     // Wait a bit then try to run the same line again
                     // TODO: Find a better place to put this magic number
@@ -307,23 +338,85 @@ public class Robot : Agent<Robot>, IComputer
                 }
 
                 // The robot should be holding subject A
-                if (_holding != subjectA)
+                if (Holding != plugSubjectA)
                     throw new Exception($"Tried to plug in something {name} wasn't holding");
                 
                 // TODO: Subject B should be in range
                 
-                Plugin(subjectA, subjectB, () =>
+                Plugin(plugSubjectA, plugSubjectB, () =>
                 {
-                    _program.GotoNextLine();
-                    _program.RunCurrentLine(this);
-                    onCompleteCallback();
+                    // If the program isn't currently interrupted
+                    // if (!_program.Interrupted)
+                    // {
+                        // Run the next line of code
+                        _program.GotoNextLine();
+                        _program.RunCurrentLine(this);
+                    // }
                 });
                 
                 // TODO: Are these necessary, will they cause problems?
-                AddAgentInteraction(subjectA);
-                AddAgentInteraction(subjectB);
+                AddAgentInteraction(plugSubjectA);
+                AddAgentInteraction(plugSubjectB);
+                break;
+            
+            case "unplug":
+                var unplugSubjectA = arguments[0] as BaseAgent;
+                var unplugSubjectB = arguments[1] as BaseAgent;
+                
+                // If valid agents couldn't be found (there might not be any available right now)
+                if (unplugSubjectA == null || unplugSubjectB == null)
+                {
+                    // Wait a bit then try to run the same line again
+                    // TODO: Find a better place to put this magic number
+                    StartCoroutine(Util.Delay(1f, () => _program.RunCurrentLine(this)));
+                    return;
+                }
+
+                // Subject B should have subject A plugged in
+                if (unplugSubjectB.PluggedIn != unplugSubjectA)
+                    throw new Exception($"Tried to unplug {unplugSubjectA.Name} that wasn't plugged into {unplugSubjectB.Name}");
+                
+                // TODO: Subject A and B should be in range
+                
+                // HACK
+                // TODO: Add unplugging from something other than self 
+                UnplugFromSelf(unplugSubjectA, () =>
+                {
+                    // If the program isn't currently interrupted
+                    // if (!_program.Interrupted)
+                    // {
+                    // Run the next line of code
+                    _program.GotoNextLine();
+                    _program.RunCurrentLine(this);
+                    // }
+                });
+                
+                // TODO: Are these necessary, will they cause problems?
+                AddAgentInteraction(unplugSubjectA);
+                AddAgentInteraction(unplugSubjectB);
+                break;
+            
+            case "wait":
+                var delayNode = arguments[0] as DelayNode;
+
+                StartCoroutine(WaitInternal(delayNode, () =>
+                {
+                    Debug.Log($"Waiting finished");
+                    _program.GotoNextLine();
+                    _program.RunCurrentLine(this);
+                }));
                 break;
         }
+    }
+
+    private IEnumerator WaitInternal(DelayNode delayNode, Action callback)
+    {
+        while (delayNode.Waiting)
+        {
+            Debug.Log($"Waiting...");
+            yield return new WaitForEndOfFrame();
+        }
+        callback();
     }
 
     public override void OnClicked()
