@@ -983,7 +983,7 @@ NavMeshAgent:
   m_Acceleration: 3
   avoidancePriority: 50
   m_AngularSpeed: 120
-  m_StoppingDistance: 0
+  m_StoppingDistance: 3
   m_AutoTraverseOffMeshLink: 1
   m_AutoBraking: 1
   m_AutoRepath: 1
@@ -1012,7 +1012,8 @@ MonoBehaviour:
     PrefabModificationsReferencedUnityObjects: []
     PrefabModifications: []
     SerializationNodes: []
-  _agentInteractionCooldown: 5
+  _agentInteractionCooldown: 7.5
+  _minInteractionDistance: 5
   _maxBatteryLevel: 100
   _idleBatteryDrainPerSecond: 0
   _movingBatteryDrainPerSecond: 1
@@ -1028,6 +1029,7 @@ MonoBehaviour:
   _pluginSlot: {fileID: 855051718}
   _runCode: 1
   code: 
+  _hackingSpeed: 1
 --- !u!114 &7010603941551846968
 MonoBehaviour:
   m_ObjectHideFlags: 0

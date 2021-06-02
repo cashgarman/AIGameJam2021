@@ -49,6 +49,7 @@ public abstract class Agent<AgentType> : BaseAgent where AgentType : BaseAgent
 	protected AgentState<AgentType> _currentState;
 	private List<AgentInteraction> _recentlyInteractedAgents = new List<AgentInteraction>();
 	[SerializeField] private float _agentInteractionCooldown = 5f;
+	[SerializeField] protected float _minInteractionDistance = 3f;
 
 	public void GotoState(AgentType agent, Type newStateType, params object[] args)
 	{
@@ -101,5 +102,10 @@ public abstract class Agent<AgentType> : BaseAgent where AgentType : BaseAgent
 	{
 		// Add the agent to the list of agents recently interacted with
 		_recentlyInteractedAgents.Add(new AgentInteraction(agent));
+	}
+
+	protected bool InRange(BaseAgent target)
+	{
+		return Vector3.Distance(transform.position, target.transform.position) <= _minInteractionDistance;
 	}
 }

@@ -46,7 +46,7 @@ public class Robot : Agent<Robot>, IComputer
     private NavMeshAgent _navAgent;
     [SerializeField] private float _reachedDestinationThreshold = 0.1f;
     public float ReachedDestinationThreshold => _reachedDestinationThreshold;
-    public bool HasReachedDestination => _navAgent.remainingDistance < _reachedDestinationThreshold;
+    public bool HasReachedDestination => _navAgent.remainingDistance <= _navAgent.stoppingDistance;
     public NavMeshAgent NavAgent => _navAgent;
     public Program Program => _program;
 
@@ -54,13 +54,16 @@ public class Robot : Agent<Robot>, IComputer
     [SerializeField] private Transform _hands;
     [SerializeField] private Transform _pluginSlot;
     public IPickup Holding { get; private set; }
-    public float HackingSpeed => _hackingSpeed;
 
     // Brain
     [SerializeField] private bool _runCode = false;
     [SerializeField, TextArea(5, 20)] private string code;
     private Program _program;
+    
+    // Hacking
     [SerializeField] private float _hackingSpeed = 1f;
+    private IHackable _hackingInProgress;
+    public float HackingSpeed => _hackingSpeed;
 
     private void Awake()
     {
@@ -128,14 +131,28 @@ public class Robot : Agent<Robot>, IComputer
 
     public void MoveToPositionWithCallback(Vector3 destination, Action onReached)
     {
+        InterruptProcesses();
+        
         NavAgent.isStopped = false;
         GotoState<RobotMovingToPositionState>(this, destination, onReached);
     }
 
     public void MoveToObjectWithCallback(Transform target, Action onReached = null, Func<bool> shouldContinueProvider = null)
     {
+        InterruptProcesses();
+       
         NavAgent.isStopped = false;
         GotoState<RobotMovingToTargetState>(this, target, onReached, shouldContinueProvider);
+    }
+
+    private void InterruptProcesses()
+    {
+        // Interrupt any hacking
+        if (_hackingInProgress != null)
+        {
+            _hackingInProgress.OnHackingInterrupted();
+            _hackingInProgress = null;
+        }
     }
 
     public void Stop()
@@ -276,10 +293,10 @@ public class Robot : Agent<Robot>, IComputer
                 });
                 AddAgentInteraction(agent);
                 break;
-            
+
             case "pickup":
                 var pickupTarget = arguments[0] as IPickup;
-                
+
                 // If a valid agent couldn't be found (there might not be one available right now)
                 if (pickupTarget == null)
                 {
@@ -288,17 +305,31 @@ public class Robot : Agent<Robot>, IComputer
                     StartCoroutine(Util.Delay(1f, () => _program.RunCurrentLine(this)));
                     return;
                 }
-                
-                PickUp(pickupTarget, () =>
+
+                void PickUpTarget()
                 {
-                    // If the program isn't currently interrupted
-                    // if (!_program.Interrupted)
-                    // {
+                    PickUp(pickupTarget, () =>
+                    {
+                        // If the program isn't currently interrupted
+                        // if (!_program.Interrupted)
+                        // {
                         // Run the next line of code
                         _program.GotoNextLine();
                         _program.RunCurrentLine(this);
-                    // }
-                });
+                        // }
+                    });
+                }
+                
+                // If the target is far away
+                if (!InRange(pickupTarget as BaseAgent))
+                    MoveToObjectWithCallback(pickupTarget.transform, () =>
+                    {
+                        AddAgentInteraction(pickupTarget as BaseAgent);
+                        PickUpTarget();
+                    });
+                else
+                    PickUpTarget();
+                
                 AddAgentInteraction(pickupTarget as BaseAgent);
                 break;
             
@@ -344,30 +375,41 @@ public class Robot : Agent<Robot>, IComputer
                 if (Holding != plugSubjectA)
                     throw new Exception($"Tried to plug in something {name} wasn't holding");
                 
-                // TODO: Subject B should be in range
-                
-                Plugin(plugSubjectA, plugSubjectB, () =>
+                void PluginTarget()
                 {
-                    // If the program isn't currently interrupted
-                    // if (!_program.Interrupted)
-                    // {
+                    Plugin(plugSubjectA, plugSubjectB, () =>
+                    {
+                        // If the program isn't currently interrupted
+                        // if (!_program.Interrupted)
+                        // {
                         // Run the next line of code
                         _program.GotoNextLine();
                         _program.RunCurrentLine(this);
-                    // }
-                });
+                        // }
+                    });
+                }
                 
-                // TODO: Are these necessary, will they cause problems?
-                AddAgentInteraction(plugSubjectA);
-                AddAgentInteraction(plugSubjectB);
+                // If the target is far away
+                if (!InRange(plugSubjectB))
+                    MoveToObjectWithCallback(plugSubjectB.transform, () =>
+                    {
+                        // TODO: Are these necessary, will they cause problems?
+                        AddAgentInteraction(plugSubjectA);
+                        AddAgentInteraction(plugSubjectB);
+                        
+                        PluginTarget();
+                    });
+                else
+                    PluginTarget();
+                
                 break;
             
             case "unplug":
-                var unplugSubjectA = arguments[0] as BaseAgent;
-                var unplugSubjectB = arguments[1] as BaseAgent;
+                var subjectToUnplug = arguments[0] as BaseAgent;
+                var pluggedIntoSubject = arguments[1] as BaseAgent;
                 
                 // If valid agents couldn't be found (there might not be any available right now)
-                if (unplugSubjectA == null || unplugSubjectB == null)
+                if (subjectToUnplug == null || pluggedIntoSubject == null)
                 {
                     // Wait a bit then try to run the same line again
                     // TODO: Find a better place to put this magic number
@@ -376,27 +418,38 @@ public class Robot : Agent<Robot>, IComputer
                 }
 
                 // Subject B should have subject A plugged in
-                if (unplugSubjectB.PluggedIn != unplugSubjectA)
-                    throw new Exception($"Tried to unplug {unplugSubjectA.Name} that wasn't plugged into {unplugSubjectB.Name}");
+                if (pluggedIntoSubject.PluggedIn != subjectToUnplug)
+                    throw new Exception($"Tried to unplug {subjectToUnplug.Name} that wasn't plugged into {pluggedIntoSubject.Name}");
                 
-                // TODO: Subject A and B should be in range
-                
-                // HACK
-                // TODO: Add unplugging from something other than self 
-                UnplugFromSelf(unplugSubjectA, () =>
+                void UnpluginTarget()
                 {
-                    // If the program isn't currently interrupted
-                    // if (!_program.Interrupted)
-                    // {
-                    // Run the next line of code
-                    _program.GotoNextLine();
-                    _program.RunCurrentLine(this);
-                    // }
-                });
+                    // HACK
+                    // TODO: Add unplugging from something other than self 
+                    UnplugFromSelf(subjectToUnplug, () =>
+                    {
+                        // If the program isn't currently interrupted
+                        // if (!_program.Interrupted)
+                        // {
+                        // Run the next line of code
+                        _program.GotoNextLine();
+                        _program.RunCurrentLine(this);
+                        // }
+                    });
+                }
                 
-                // TODO: Are these necessary, will they cause problems?
-                AddAgentInteraction(unplugSubjectA);
-                AddAgentInteraction(unplugSubjectB);
+                // If either subject is far away
+                if (!InRange(subjectToUnplug))
+                    MoveToObjectWithCallback(subjectToUnplug.transform, () =>
+                    {
+                        // TODO: Are these necessary, will they cause problems?
+                        AddAgentInteraction(subjectToUnplug);
+                        AddAgentInteraction(pluggedIntoSubject);
+                        
+                        UnpluginTarget();
+                    });
+                else
+                    UnpluginTarget();
+                
                 break;
             
             case "wait":
@@ -415,19 +468,33 @@ public class Robot : Agent<Robot>, IComputer
                 break;
             
             case "hack":
-                var target = arguments[0] as IHackable;
+                var hackingTarget = arguments[0] as IHackable;
 
-                if (target == null)
+                if (hackingTarget == null)
                 {
-                    Debug.Log($"Tried to hack unhackable target {target.Name}");
+                    Debug.Log($"Tried to hack unhackable target {hackingTarget.Name}");
                     return;
                 }
 
-                target.OnHackingStarted(this);
+                void HackTarget()
+                {
+                    hackingTarget.OnHackingStarted(this, () =>
+                    {
+                        _program.GotoNextLine();
+                        _program.RunCurrentLine(this);
+                    });
+                    _hackingInProgress = hackingTarget;
+                }
                 
-                //asdf
-                    // TODO: Listen for any movement or other interruption then run the following
-                //target.OnHackingInterrupted();
+                // If either subject is far away
+                if (!InRange(hackingTarget as BaseAgent))
+                    MoveToObjectWithCallback(hackingTarget.transform, () =>
+                    {
+                        HackTarget();
+                        AddAgentInteraction(hackingTarget as BaseAgent);
+                    });
+                else
+                    HackTarget();
                 
                 break;
             
@@ -440,9 +507,9 @@ public class Robot : Agent<Robot>, IComputer
     {
         _program = program;
         _program.StartMain();
-        _program.RunCurrentLine(Game.ControlledAgent);
+        _program.RunCurrentLine(Game.ControlledRobot);
     }
-
+    
     private IEnumerator WaitInternal(DelayNode delayNode, Action callback)
     {
         while (delayNode.Waiting)

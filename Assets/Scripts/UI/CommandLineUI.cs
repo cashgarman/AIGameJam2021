@@ -54,9 +54,10 @@ namespace UI
             {
                 // Compile the command
                 var program = Compiler.Compile(_commandLineInput.text);
+                program.RunOnce = true;
 
                 // Run the command on the currently controlled agent
-                Game.ControlledAgent.RunProgram(program);
+                Game.ControlledRobot.RunProgram(program);
 
                 // Clear the error
                 _errorDisplay.Hide();
