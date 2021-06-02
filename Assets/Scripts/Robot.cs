@@ -63,6 +63,7 @@ public class Robot : Agent<Robot>, IComputer
     // Hacking
     [SerializeField] private float _hackingSpeed = 1f;
     private IHackable _hackingInProgress;
+    private Coroutine _waitingToRetryCommand;
     public float HackingSpeed => _hackingSpeed;
 
     private void Awake()
@@ -76,7 +77,7 @@ public class Robot : Agent<Robot>, IComputer
         if (_runCode)
         {
             _program = Compiler.Compile(code);
-            _program.StartMain();
+            _program.StartMain(this);
             _program.RunCurrentLine(this);
         }
         else
@@ -95,11 +96,12 @@ public class Robot : Agent<Robot>, IComputer
         if (_program is {Interrupted: false})
         {
             // Foreach if statement in the program
-            foreach (var ifStatement in _program.Sections.Where(s => s.Type == CodeSection.BlockType.Conditional))
+            foreach (var ifStatement in _program.Sections.Where(s => s.IsIfStatement))
             {
+                // TODO ASDF: 
                 // Check if the if statement should run
-                Debug.Log($"Checking if if statement '{ifStatement.Lines[0]}' should run");
-                if (ifStatement.Lines[0].Run(this))
+                // Debug.Log($"Checking if if statement '{ifStatement.Lines[0]}' should run");
+                if (ifStatement.Lines[0].Run(_program))
                 {
                     _program.InterruptAndJumpToSection(ifStatement);
                     _program.RunCurrentLine(this);
@@ -109,6 +111,31 @@ public class Robot : Agent<Robot>, IComputer
         }
         
         HandleDebugControls();
+    }
+
+    public override void OnHeardShout(ShoutType shout, BaseAgent shouter)
+    {
+        base.OnHeardShout(shout, shouter);
+        
+        // If the robot's program isn't currently interrupted
+        if (_program is {Interrupted: false})
+        {
+            // Foreach heard statement in the program
+            foreach (var heardStatement in _program.Sections.Where(s => s.IsHeardStatement))
+            {
+                // Check if the heard statement should run
+                Debug.Log($"Checking if heard statement '{heardStatement.Lines[0]}' should run");
+                if ((heardStatement.FirstLine.RootNode as HeardNode).Notification.ToLower() == shout.ToString().ToLower())
+                {
+                    // Populate the agent that shouted this notification
+                    _program.Notifier = shouter;
+                    Debug.Log($"Heard statement '{heardStatement.Lines[0]}' should run");
+                    _program.InterruptAndJumpToSection(heardStatement);
+                    _program.RunCurrentLine(this);
+                    break;
+                }
+            }
+        }
     }
 
     private void HandleDebugControls()
@@ -275,25 +302,19 @@ public class Robot : Agent<Robot>, IComputer
                 // If a valid agent couldn't be found (there might not be one available right now)
                 if (agent == null)
                 {
-                    // Wait a bit then try to run the same line again
-                    // TODO: Find a better place to put this magic number
-                    Debug.Log($"ERROR: Couldn't find a matching subject while running '{Program.CurrentLine}'");
-                    StartCoroutine(Util.Delay(1f, () => _program.RunCurrentLine(this)));
+                    // Try the command again a bit
+                    RetryLineOfCodeAfterDelay();
                     return;
                 }
                 
                 MoveToObjectWithCallback(agent.transform, () =>
                 {
-                    // If the program isn't currently interrupted
-                    // if (!_program.Interrupted)
-                    // {
-                        // Run the next line of code
-                        _program.GotoNextLine();
-                        _program.RunCurrentLine(this);
-                    // }
+                    AddAgentInteraction(agent);
+                    
+                    // Run the next line of code
+                    _program.GotoNextLine();
+                    _program.RunCurrentLine(this);
                 });
-                
-                AddAgentInteraction(agent);
                 
                 break;
 
@@ -303,9 +324,8 @@ public class Robot : Agent<Robot>, IComputer
                 // If a valid agent couldn't be found (there might not be one available right now)
                 if (pickupTarget == null)
                 {
-                    // Wait a bit then try to run the same line again
-                    // TODO: Find a better place to put this magic number
-                    StartCoroutine(Util.Delay(1f, () => _program.RunCurrentLine(this)));
+                    // Try the command again a bit
+                    RetryLineOfCodeAfterDelay();
                     return;
                 }
 
@@ -313,13 +333,9 @@ public class Robot : Agent<Robot>, IComputer
                 {
                     PickUp(pickupTarget, () =>
                     {
-                        // If the program isn't currently interrupted
-                        // if (!_program.Interrupted)
-                        // {
                         // Run the next line of code
                         _program.GotoNextLine();
                         _program.RunCurrentLine(this);
-                        // }
                     });
                 }
                 
@@ -331,9 +347,11 @@ public class Robot : Agent<Robot>, IComputer
                         PickUpTarget();
                     });
                 else
+                {
+                    AddAgentInteraction(pickupTarget as BaseAgent);
                     PickUpTarget();
+                }
                 
-                AddAgentInteraction(pickupTarget as BaseAgent);
                 break;
             
             case "drop":
@@ -342,23 +360,20 @@ public class Robot : Agent<Robot>, IComputer
                 // If a valid agent couldn't be found (there might not be one available right now)
                 if (dropTarget == null)
                 {
-                    // Wait a bit then try to run the same line again
-                    // TODO: Find a better place to put this magic number
-                    StartCoroutine(Util.Delay(1f, () => _program.RunCurrentLine(this)));
+                    // Try the command again a bit
+                    RetryLineOfCodeAfterDelay();
                     return;
                 }
                 
                 Drop(dropTarget, () =>
                 {
-                    // If the program isn't currently interrupted
-                    // if (!_program.Interrupted)
-                    // {
-                        // Run the next line of code
-                        _program.GotoNextLine();
-                        _program.RunCurrentLine(this);
-                    // }
+                    AddAgentInteraction(dropTarget as BaseAgent);
+                    
+                    // Run the next line of code
+                    _program.GotoNextLine();
+                    _program.RunCurrentLine(this);
                 });
-                AddAgentInteraction(dropTarget as BaseAgent);
+                
                 break;
             
             case "plug":
@@ -368,9 +383,8 @@ public class Robot : Agent<Robot>, IComputer
                 // If valid agents couldn't be found (there might not be any available right now)
                 if (plugSubjectA == null || plugSubjectB == null)
                 {
-                    // Wait a bit then try to run the same line again
-                    // TODO: Find a better place to put this magic number
-                    StartCoroutine(Util.Delay(1f, () => _program.RunCurrentLine(this)));
+                    // Try the command again a bit
+                    RetryLineOfCodeAfterDelay();
                     return;
                 }
 
@@ -382,26 +396,19 @@ public class Robot : Agent<Robot>, IComputer
                 {
                     Plugin(plugSubjectA, plugSubjectB, () =>
                     {
-                        // If the program isn't currently interrupted
-                        // if (!_program.Interrupted)
-                        // {
+                        // TODO: Are these necessary, will they cause problems?
+                        AddAgentInteraction(plugSubjectA);
+                        AddAgentInteraction(plugSubjectB);
+                        
                         // Run the next line of code
                         _program.GotoNextLine();
                         _program.RunCurrentLine(this);
-                        // }
                     });
                 }
                 
                 // If the target is far away
                 if (!InRange(plugSubjectB))
-                    MoveToObjectWithCallback(plugSubjectB.transform, () =>
-                    {
-                        // TODO: Are these necessary, will they cause problems?
-                        AddAgentInteraction(plugSubjectA);
-                        AddAgentInteraction(plugSubjectB);
-                        
-                        PluginTarget();
-                    });
+                    MoveToObjectWithCallback(plugSubjectB.transform, PluginTarget);
                 else
                     PluginTarget();
                 
@@ -414,9 +421,8 @@ public class Robot : Agent<Robot>, IComputer
                 // If valid agents couldn't be found (there might not be any available right now)
                 if (subjectToUnplug == null || pluggedIntoSubject == null)
                 {
-                    // Wait a bit then try to run the same line again
-                    // TODO: Find a better place to put this magic number
-                    StartCoroutine(Util.Delay(1f, () => _program.RunCurrentLine(this)));
+                    // Try the command again a bit
+                    RetryLineOfCodeAfterDelay();
                     return;
                 }
 
@@ -430,26 +436,19 @@ public class Robot : Agent<Robot>, IComputer
                     // TODO: Add unplugging from something other than self 
                     UnplugFromSelf(subjectToUnplug, () =>
                     {
-                        // If the program isn't currently interrupted
-                        // if (!_program.Interrupted)
-                        // {
+                        // TODO: Are these necessary, will they cause problems?
+                        AddAgentInteraction(subjectToUnplug);
+                        AddAgentInteraction(pluggedIntoSubject);
+                        
                         // Run the next line of code
                         _program.GotoNextLine();
                         _program.RunCurrentLine(this);
-                        // }
                     });
                 }
                 
                 // If either subject is far away
                 if (!InRange(subjectToUnplug))
-                    MoveToObjectWithCallback(subjectToUnplug.transform, () =>
-                    {
-                        // TODO: Are these necessary, will they cause problems?
-                        AddAgentInteraction(subjectToUnplug);
-                        AddAgentInteraction(pluggedIntoSubject);
-                        
-                        UnpluginTarget();
-                    });
+                    MoveToObjectWithCallback(subjectToUnplug.transform, UnpluginTarget);
                 else
                     UnpluginTarget();
                 
@@ -473,6 +472,15 @@ public class Robot : Agent<Robot>, IComputer
             case "hack":
                 var hackingTarget = arguments[0] as IHackable;
 
+                // If a valid agent couldn't be found (there might not be one available right now)
+                if (arguments[0] == null)
+                {
+                    // Try the command again a bit
+                    RetryLineOfCodeAfterDelay();
+                    return;
+                }
+                
+                // Check if the target is even hackable
                 if (hackingTarget == null)
                 {
                     Debug.Log($"Tried to hack unhackable target {hackingTarget.Name}");
@@ -481,6 +489,7 @@ public class Robot : Agent<Robot>, IComputer
 
                 void HackTarget()
                 {
+                    AddAgentInteraction(hackingTarget as BaseAgent);
                     hackingTarget.OnHackingStarted(this, () =>
                     {
                         _program.GotoNextLine();
@@ -491,11 +500,7 @@ public class Robot : Agent<Robot>, IComputer
                 
                 // If either subject is far away
                 if (!InRange(hackingTarget as BaseAgent))
-                    MoveToObjectWithCallback(hackingTarget.transform, () =>
-                    {
-                        HackTarget();
-                        AddAgentInteraction(hackingTarget as BaseAgent);
-                    });
+                    MoveToObjectWithCallback(hackingTarget.transform, HackTarget);
                 else
                     HackTarget();
                 
@@ -506,10 +511,26 @@ public class Robot : Agent<Robot>, IComputer
         }
     }
 
+    private void RetryLineOfCodeAfterDelay()
+    {
+        // Wait a bit then try to run the same line again
+        Debug.Log($"WARNING: Couldn't find a matching subject while running '{Program.CurrentLine}', will try again in a moment");
+                    
+        if(_waitingToRetryCommand != null)
+            Debug.LogError($"Shouldn't reach this");
+                    
+        // TODO: Find a better place to put this magic number
+        _waitingToRetryCommand = StartCoroutine(Util.Delay(1f, () =>
+        {
+            _waitingToRetryCommand = null;
+            _program.RunCurrentLine(this);
+        }));
+    }
+
     public void RunProgram(Program program)
     {
         _program = program;
-        _program.StartMain();
+        _program.StartMain(this);
         _program.RunCurrentLine(Game.ControlledRobot);
     }
     
@@ -543,6 +564,7 @@ public class Robot : Agent<Robot>, IComputer
         {
             "empty" => _batteryLevel <= _batteryLowLevel, // TODO: Should this be zero, or close enough
             "full" => _batteryLevel >= _batteryHighLevel, // TODO: Should this be zero, or close enough
+            "criminal" => IsCriminal,
             _ => base.FilterBy(filter, computer)
         };
     }

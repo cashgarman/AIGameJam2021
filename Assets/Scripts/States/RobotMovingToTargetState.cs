@@ -37,7 +37,8 @@ namespace States
 			// If the target has moved (and the path has already been calculated)
 			if (Vector3.Distance(_target.position, _prevTargetPosition) > Agent.ReachedDestinationThreshold && !Agent.NavAgent.pathPending)
 			{
-				Debug.Log($"Target moved, recalculating path");
+				// TODO: This is happened quite a lot, look into that
+				//Debug.Log($"Target moved, recalculating path");
 				
 				// Move to the target's new position
 				Agent.NavAgent.SetDestination(_target.position);

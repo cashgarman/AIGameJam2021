@@ -47,7 +47,7 @@ namespace Programming
 
 		public override string ToString()
 		{
-			return $"{Word} ({Type})";
+			return $"${(Indented ? "\t" : "")}{Word} ({Type})";
 		}
 	}
 
@@ -114,9 +114,16 @@ namespace Programming
 				if (tokenEnumerator.Current.Type == Token.TokenType.Conditional)
 				{
 					// If we're already inside an if statement
-					if (currentSection.Type == CodeSection.BlockType.Conditional)
+					if (currentSection.Type == CodeSection.BlockType.Conditional && tokenEnumerator.Current.Indented)
 						// Error, not supported
 						throw new Exception("Nested if statements are not supported");
+					
+					// Check if we've finished a previous condition section (NOTE: This only happens when you have back to back conditional statements)
+					if (tokenEnumerator.Current.Type == Token.TokenType.Conditional)
+					{
+						// Add the previous if statement section to the program sections
+						program.AddSection(currentSection);
+					}
 					
 					// Create a new section for the if statement
 					currentSection = new CodeSection(CodeSection.BlockType.Conditional);
@@ -146,7 +153,7 @@ namespace Programming
 						// We're not inside the if statement any more
 						currentSection = mainSection;
 						
-						// Add the line of code to the current if statement
+						// Add the line of code to the main section
 						currentSection.AddLine(GetLineOfTokens(tokenEnumerator));
 					}
 				}
@@ -172,11 +179,11 @@ namespace Programming
 				foreach (var line in section.Lines)
 				{
 					// Compile the line of code
-					var rootNode = _instance.CreateNode(line.Tokens);
-					if (!(rootNode is BranchNode))
+					var rootNode = _instance.CreateNode(line.Tokens.ToArray());
+					if (!(rootNode is BranchNode branchNode))
 						throw new Exception($"Invalid line of code '{line}': Root node is not executable");
 					
-					line.RootNode = rootNode as BranchNode;
+					line.RootNode = branchNode;
 				}
 			}
 
@@ -199,8 +206,6 @@ namespace Programming
 			}
 
 			return program;*/
-
-			return null;
 		}
 
 		private static CodeLine GetLineOfTokens(IEnumerator<Token> tokenEnumerator)
@@ -269,7 +274,7 @@ namespace Programming
 			throw new Exception($"Couldn't find a matching token for word '{word}'");
 		}
 
-		private Node CreateNode(IEnumerable<Token> tokens)
+		private Node CreateNode(Token[] tokens)
 		{
 			// HACK: MEGAHACK!
 			// HACK: Comparison nodes start with a noun, refactor this to be more flexible to grammar
@@ -278,9 +283,9 @@ namespace Programming
 			{
 				// [Subject] (Equality) [Filter]
 				var subjectTokens = tokens.TakeWhile(token => token.Word != "is" && token.Word != "not").ToArray();
-				var equalityToken = tokens.Skip(subjectTokens.Length).Take(1).ToArray();
-				var filterToken = tokens.Skip(subjectTokens.Length).Skip(1).ToArray();
-				return new ComparisonNode(CreateNode(subjectTokens), CreateNode(equalityToken) as EqualityNode, CreateNode(filterToken) as FilterNode);
+				var equalityToken = tokens.Skip(subjectTokens.Length).Take(1).FirstOrDefault();
+				var filterToken = tokens.Skip(subjectTokens.Length).Skip(1).FirstOrDefault();
+				return new ComparisonNode(CreateNode(subjectTokens), new LeafNode(equalityToken), new LeafNode(filterToken));
 			}
 			
 			// Look at the first token
@@ -299,36 +304,36 @@ namespace Programming
 					break;
 				case Token.TokenType.Verb:
 					// (Verb) [Subject]
-					return new ActionNode(new VerbNode(first), CreateNode(rest));
+					return new ActionNode(new LeafNode(first), CreateNode(rest.ToArray()));
 				case Token.TokenType.Adjective:
 					// (Adjective) [Subject]
-					return new QualifierNode(new AdjectiveNode(first), CreateNode(rest));
+					return new AdjectiveNode(new LeafNode(first), CreateNode(rest.ToArray()));
 				case Token.TokenType.Filter:
 					// HACK: Another shitty hack due to over-strict grammar matching
 					if (rest == null)
-						return new FilterNode(first);
+						return new LeafNode(first);
 					else
 						// (Filter) [Subject]
-						return new PredicateNode(new FilterNode(first), CreateNode(rest));
+						return new FilterNode(new LeafNode(first), CreateNode(rest.ToArray()));
 				case Token.TokenType.Interaction:
 					// (Interaction) [SubjectA] (Deliminator) [SubjectB]
 					var subjectATokens = rest.TakeWhile(token => token.Type != Token.TokenType.InteractionDeliminator && token.Word != first.Deliminator).ToArray();
 					var subjectBTokens = rest.SkipWhile(token => token.Type != Token.TokenType.InteractionDeliminator && token.Word != first.Deliminator).Skip(1).ToArray();
-					return new InteractionNode(new VerbNode(first), CreateNode(subjectATokens), CreateNode(subjectBTokens));
+					return new InteractionNode(new LeafNode(first), CreateNode(subjectATokens), CreateNode(subjectBTokens));
 				case Token.TokenType.Conditional:
 					return first.Word switch
 					{
 						// If statement: (Conditional) [Comparison]
-						"if" => new IfNode(CreateNode(rest) as ComparisonNode),
+						"if" => new IfNode(CreateNode(rest.ToArray()) as ComparisonNode),
 						
 						// Heard statement: (Conditional) [Notification]
 						"heard" => new HeardNode(new LeafNode(rest.First()))
 					};
 				case Token.TokenType.Delay:
 					// (Delay) [Comparison]
-					return new DelayNode(new WaitUntilNode(first), CreateNode(rest) as ComparisonNode);
+					return new DelayNode(CreateNode(rest.ToArray()) as ComparisonNode);
 				case Token.TokenType.Equality:
-					return new EqualityNode(first);
+					return new LeafNode(first);
 				case Token.TokenType.Idle:
 					return new IdleNode();
 				default:
@@ -377,16 +382,16 @@ namespace Programming
 		}
 	}
 
-	internal class AdjectiveNode : LeafNode
+	internal class SubjectNode : LeafNode
 	{
-		public AdjectiveNode(Token token) : base(token)
+		public SubjectNode(Token token) : base(token)
 		{
 		}
 	}
 
-	internal class SubjectNode : LeafNode
+	/*internal class AdjectiveNode : LeafNode
 	{
-		public SubjectNode(Token token) : base(token)
+		public AdjectiveNode(Token token) : base(token)
 		{
 		}
 	}
@@ -417,56 +422,68 @@ namespace Programming
 		public WaitUntilNode(Token token) : base(token)
 		{
 		}
-	}
+	}*/
 	
 	internal class ActionNode : BranchNode
 	{
-		private readonly VerbNode _verb;
+		private readonly LeafNode _verb;
 		private readonly Node _subject;
 
-		public ActionNode(VerbNode verb, Node subject)
+		public ActionNode(LeafNode verb, Node subject)
 		{
 			Word = verb.Word;
 			_verb = verb;
 			_subject = subject;
 		}
 
-		public override bool Run(IComputer computer)
+		public override bool Run(Program program)
 		{
 			// Get the actual subject
 			BaseAgent subject = null;
 			switch(_subject)
 			{
 				case SubjectNode subjectNode:
-					subject = World.FindSubject(subjectNode, computer);
+					// HACK: This should probably use kind of variable or other context
+					if (subjectNode.Word == "notifier")
+					{
+						// Get the notifier from the running program
+						subject = program.Notifier;
+					}
+					else if (subjectNode.Word == "target")
+					{
+						// Get the target from the running program
+						subject = program.Target;
+					}
+					else
+						subject = World.FindSubject(subjectNode, program);
 					break;
 				
-				case PredicateNode predicateNode:
-					predicateNode.Run(computer);
-					subject = predicateNode.Subjects.FirstOrDefault();
+				case FilterNode filterNode:
+					filterNode.Run(program);
+					subject = filterNode.Subjects.FirstOrDefault();
 					break;
 				
-				case QualifierNode qualifierNode:
-					qualifierNode.Run(computer);
-					subject = qualifierNode.Subjects.FirstOrDefault();
+				case AdjectiveNode adjectiveNode:
+					adjectiveNode.Run(program);
+					subject = adjectiveNode.Subjects.FirstOrDefault();
 					break;
 			};
 			
 			// Tell the computer to run the verb on the subject
-			computer.ExecuteCommand(_verb.Word, subject);
+			program.Computer.ExecuteCommand(_verb.Word, subject);
 
 			// HACK: This isn't used for non-if statements
 			return false;
 		}
 	}
 
-	internal class QualifierNode : BranchNode
+	internal class AdjectiveNode : BranchNode
 	{
-		private readonly AdjectiveNode _adjective;
+		private readonly LeafNode _adjective;
 		private readonly Node _subject;
 		private IEnumerable<BaseAgent> _foundSubjects;
 
-		public QualifierNode(AdjectiveNode adjective, Node subject)
+		public AdjectiveNode(LeafNode adjective, Node subject)
 		{
 			Word = adjective.Word;
 			_adjective = adjective;
@@ -475,7 +492,7 @@ namespace Programming
 
 		public IEnumerable<BaseAgent> Subjects => _foundSubjects;
 
-		public override bool Run(IComputer computer)
+		public override bool Run(Program program)
 		{
 			// Get the actual subject
 			switch(_subject)
@@ -484,23 +501,23 @@ namespace Programming
 					_foundSubjects = _adjective.Word switch
 					{
 						// TODO: Refactor this to use lists of BaseAgents everywhere, so we can support multiple-adjective filtering
-						"random" => World.GetRandomAgents(subjectNode.Word, computer),
-						"nearest" => World.GetClosestAgents(subjectNode.Word, computer),
+						"random" => World.GetRandomAgents(subjectNode.Word, program.Computer),
+						"nearest" => World.GetClosestAgents(subjectNode.Word, program.Computer),
 						// TODO: Add fullest and emptiest adjectives
 						_ => throw new Exception($"Unhandled adjective in qualifying node {_adjective.Word}")
 					};
 					break;
-				case QualifierNode qualifierNode:
-					qualifierNode.Run(computer);
+				case AdjectiveNode qualifierNode:
+					qualifierNode.Run(program);
 					_foundSubjects = qualifierNode.Subjects;
 					break;
-				case PredicateNode predicateNode:
-					predicateNode.Run(computer);
+				case FilterNode predicateNode:
+					predicateNode.Run(program);
 					_foundSubjects = _adjective.Word switch
 					{
 						// TODO: Refactor this to use lists of BaseAgents everywhere, so we can support multiple-adjective filtering
 						"random" => predicateNode.Subjects.Shuffle(),
-						"nearest" => predicateNode.Subjects.OrderBy(s => Vector3.Distance(s.transform.position, computer.transform.position)),
+						"nearest" => predicateNode.Subjects.OrderBy(s => Vector3.Distance(s.transform.position, program.Computer.transform.position)),
 						_ => throw new Exception($"Unhandled adjective in qualifying node {_adjective.Word}")
 					};
 					break;
@@ -511,28 +528,28 @@ namespace Programming
 		}
 	}
 	
-	internal class PredicateNode : BranchNode
+	internal class FilterNode : BranchNode
 	{
-		private readonly FilterNode _filter;
+		private readonly LeafNode _filter;
 		private readonly Node _subject;
 		
 		private IEnumerable<BaseAgent> _foundSubjects;
 		public IEnumerable<BaseAgent> Subjects => _foundSubjects;
 
-		public PredicateNode(FilterNode filter, Node subject)
+		public FilterNode(LeafNode filter, Node subject)
 		{
 			Word = filter.Word;
 			_filter = filter;
 			_subject = subject;
 		}
 
-		public override bool Run(IComputer computer)
+		public override bool Run(Program program)
 		{
 			// HACK: If the filter is self-referential 
 			if (_filter.Word == "self")
 			{
 				// Return the calling computer as the subject
-				_foundSubjects = new[] {computer as BaseAgent};
+				_foundSubjects = new[] {program.Computer as BaseAgent};
 
 				// HACK: This isn't used for non-if statements
 				return false;
@@ -542,15 +559,15 @@ namespace Programming
 			switch(_subject)
 			{
 				case SubjectNode subjectNode:
-					_foundSubjects = World.GetClosestAgents(subjectNode.Word, computer, _filter.Word);
+					_foundSubjects = World.GetClosestAgents(subjectNode.Word, program.Computer, _filter.Word);
 					break;
-				case PredicateNode predicateNode:
-					predicateNode.Run(computer);
-					_foundSubjects = World.FilterAgents(predicateNode.Subjects, computer, _filter.Word);
+				case FilterNode predicateNode:
+					predicateNode.Run(program);
+					_foundSubjects = World.FilterAgents(predicateNode.Subjects, program.Computer, _filter.Word);
 					break;
-				case QualifierNode qualifierNode:
-					qualifierNode.Run(computer);
-					_foundSubjects = World.FilterAgents(qualifierNode.Subjects, computer, _filter.Word);
+				case AdjectiveNode qualifierNode:
+					qualifierNode.Run(program);
+					_foundSubjects = World.FilterAgents(qualifierNode.Subjects, program.Computer, _filter.Word);
 					break;
 			};
 			
@@ -561,14 +578,14 @@ namespace Programming
 	
 	internal class InteractionNode : BranchNode
 	{
-		private readonly VerbNode _verb;
+		private readonly LeafNode _verb;
 		private readonly Node _subjectA;
 		private readonly Node _subjectB;
 		
 		private BaseAgent _foundSubjectA;
 		private BaseAgent _foundSubjectB;
 
-		public InteractionNode(VerbNode verb, Node subjectA, Node subjectB)
+		public InteractionNode(LeafNode verb, Node subjectA, Node subjectB)
 		{
 			Word = verb.Word;
 			_verb = verb;
@@ -576,21 +593,21 @@ namespace Programming
 			_subjectB = subjectB;
 		}
 
-		public override bool Run(IComputer computer)
+		public override bool Run(Program program)
 		{
 			// TODO: These FindSubjects need to be made to take into account Qualifiers and Predicates
 			
 			// Get subject A
-			_foundSubjectA = World.FindSubject(_subjectA, computer);
+			_foundSubjectA = World.FindSubject(_subjectA, program);
 			
 			// Get subject B
-			_foundSubjectB = World.FindSubject(_subjectB, computer);
+			_foundSubjectB = World.FindSubject(_subjectB, program);
 
 			// Debug.Log($"Found subject A: {_foundSubjectA?.Name}");
 			// Debug.Log($"Found subject B: {_foundSubjectB?.Name}");
 			
 			// Tell the computer to run the verb on the subject
-			computer.ExecuteCommand(_verb.Word, _foundSubjectA, _foundSubjectB);
+			program.Computer.ExecuteCommand(_verb.Word, _foundSubjectA, _foundSubjectB);
 			
 			// HACK: This isn't used for non-if statements
 			return false;
@@ -613,62 +630,50 @@ namespace Programming
 			_comparison = comparison;
 		}
 
-		public override bool Run(IComputer computer)
+		public override bool Run(Program program)
 		{
+			// Get the result of the if statement
+			var result = _comparison.Run(program);
+
+			// If the if statement passed
+			if (result)
+			{
+				// Store the comparison's subject as the current program target agent
+				program.Target = _comparison.Subject;
+			}
+			
 			// Return the result of the comparison
-			return _comparison.Run(computer);
+			return result;
 		}
 	}
 
 	internal class ComparisonNode : BranchNode
 	{
 		private readonly Node _subject;
-		private readonly EqualityNode _equality;
-		private readonly FilterNode _filter;
+		private readonly LeafNode _equality;
+		private readonly LeafNode _filter;
 
-		public ComparisonNode(Node subject, EqualityNode equality, FilterNode filter)
+		public BaseAgent Subject { get; private set; }
+
+		public ComparisonNode(Node subject, LeafNode equality, LeafNode filter)
 		{
-			if (equality == null)
-				throw new Exception($"A comparison was given an invalid equality");
-			
-			if(filter == null)
-				throw new Exception($"A comparison was given an invalid filter to compare against");
-				
 			Word = subject.Word;
 			_subject = subject;
-			_equality = equality;
-			_filter = filter;
+			_equality = equality ?? throw new Exception($"A comparison was given an invalid equality");
+			_filter = filter ?? throw new Exception($"A comparison was given an invalid filter to compare against");
 		}
 
-		public override bool Run(IComputer computer)
+		public override bool Run(Program program)
 		{
 			// Get the actual subject
-			BaseAgent subject = null;
-			switch(_subject)
-			{
-				// TODO: Refactor all these to create some kind of chain of subjects/qualifiers/predicates that can handle any amount in any order
-				case SubjectNode subjectNode:
-					subject = World.FindSubject(subjectNode, computer);
-					break;
-				
-				case QualifierNode qualifierNode:
-					qualifierNode.Run(computer);
-					subject = qualifierNode.Subjects.FirstOrDefault();
-					break;
-				
-				case PredicateNode predicateNode:
-					predicateNode.Run(computer);
-					// HACK: Default to just using the nearest matching subject
-					subject = World.GetClosestAgent(predicateNode.Subjects, computer, true);
-					break;
-			};
+			Subject = GetSubject(program);
 			
 			// Make sure an subject was found
-			if (subject == null)
+			if (Subject == null)
 				throw new Exception("Couldn't find a subject to compare against");
 			
 			// Check if the matching subject matches the filter
-			var result = subject.FilterBy(_filter.Word, computer);
+			var result = Subject.FilterBy(_filter.Word, program.Computer);
 
 			// Return the result (taking into account the quality operator)
 			return _equality.Word switch
@@ -677,6 +682,31 @@ namespace Programming
 				"not" => !result,
 				_ => throw new Exception("Invalid quality operator found in comparison")
 			};
+		}
+
+		private BaseAgent GetSubject(Program program)
+		{
+			BaseAgent subject = null;
+			switch(_subject)
+			{
+				// TODO: Refactor all these to create some kind of chain of subjects/qualifiers/predicates that can handle any amount in any order
+				case SubjectNode subjectNode:
+					subject = World.FindSubject(subjectNode, program);
+					break;
+				
+				case AdjectiveNode qualifierNode:
+					qualifierNode.Run(program);
+					subject = qualifierNode.Subjects.FirstOrDefault();
+					break;
+				
+				case FilterNode predicateNode:
+					predicateNode.Run(program);
+					// HACK: Default to just using the nearest matching subject
+					subject = World.GetClosestAgent(predicateNode.Subjects, program.Computer, true);
+					break;
+			};
+
+			return subject;
 		}
 	}
 
@@ -691,7 +721,7 @@ namespace Programming
 			_notification = notification ?? throw new Exception($"A heard notification node was given an invalid notification");
 		}
 
-		public override bool Run(IComputer computer)
+		public override bool Run(Program program)
 		{
 			return true;
 		}
@@ -699,32 +729,29 @@ namespace Programming
 
 	internal class DelayNode : BranchNode
 	{
-		private readonly WaitUntilNode _waitUntil;
 		private readonly ComparisonNode _comparison;
 		private bool _waiting;
 
 		public bool Waiting => _waiting;
 		
-		public DelayNode(WaitUntilNode waitUntil, ComparisonNode comparison)
+		public DelayNode(ComparisonNode comparison)
 		{
 			if (comparison == null)
 				throw new Exception($"A delay node was given an invalid comparison");
 			
-			Word = waitUntil.Word;
-			_waitUntil = waitUntil;
 			_comparison = comparison;
 		}
 
-		public override bool Run(IComputer computer)
+		public override bool Run(Program program)
 		{
 			_waiting = true;
-			(computer as BaseAgent).StartCoroutine(Wait(computer));
-			computer.ExecuteCommand("wait", this);
+			(program.Computer as BaseAgent).StartCoroutine(Wait(program));
+			program.Computer.ExecuteCommand("wait", this);
 			
 			return !_waiting;
 		}
 
-		private IEnumerator Wait(IComputer computer)
+		private IEnumerator Wait(Program computer)
 		{
 			while (_waiting)
 			{
@@ -744,9 +771,9 @@ namespace Programming
 			Word = "idle";
 		}
 
-		public override bool Run(IComputer computer)
+		public override bool Run(Program program)
 		{
-			computer.ExecuteCommand("idle", this);
+			program.Computer.ExecuteCommand("idle", this);
 			
 			// HACK: This isn't used for non-if statements
 			return false;
@@ -766,7 +793,7 @@ namespace Programming
 
 	public abstract class BranchNode : Node
 	{
-		public abstract bool Run(IComputer computer);
+		public abstract bool Run(Program program);
 	}
 
 	internal class LeafNode : Node

@@ -10,7 +10,7 @@ using UnityEngine;
 public class AgentInteraction
 {
 	public BaseAgent Agent { get; }
-	public float TimeInteractedWith { get; }
+	public float TimeInteractedWith { get; set; }
 
 	public AgentInteraction(BaseAgent agent)
 	{
@@ -21,11 +21,20 @@ public class AgentInteraction
 
 public abstract class BaseAgent : SerializedMonoBehaviour
 {
+	public enum ShoutType
+	{
+		CrimeInProgress
+	}
+	
+	[SerializeField] private float _shoutRange = 30f;
+	[SerializeField] private float _criminalFlagCooldown = 30f;
+	
 	public abstract Transform PluginSlot { get; }
 	public abstract string Name { get; }
 	public abstract bool IsPluggedIn { get; set; }
 	public abstract BaseAgent PluggedIn { get; set; }
-
+	public bool IsCriminal { get; private set; }
+	
 	public virtual float GetOrderBy(string sortType)
 	{
 		return 1f;
@@ -54,28 +63,42 @@ public abstract class BaseAgent : SerializedMonoBehaviour
 		PluggedIn = null;
 	}
 
-	public virtual void OnHeardShout<AgentType>(Agent<AgentType>.ShoutType shout, Agent<AgentType> shouter)
-		where AgentType : BaseAgent
+	public virtual void OnHeardShout(ShoutType shout, BaseAgent shouter)
 	{
 		Debug.Log($"{Name} heard shout {shout} from {shouter.Name}");
+	}
+
+	protected void Shout(ShoutType shout)
+	{
+		Debug.Log($"{Name} shouted {shout}");
+		World.BroadcastShout(shout, this, _shoutRange);
+	}
+	
+	public void FlagACriminal()
+	{
+		StartCoroutine(FlagACriminalInternal());
+	}
+
+	private IEnumerator FlagACriminalInternal()
+	{
+		// Agent is a criminal now		
+		IsCriminal = true;
+
+		// Wait for the criminal cooldown
+		yield return new WaitForSeconds(_criminalFlagCooldown);
+
+		// Agent is no longer a criminal
+		IsCriminal = false;
 	}
 }
 
 public abstract class Agent<AgentType> : BaseAgent where AgentType : BaseAgent
 {
-	public enum ShoutType
-	{
-		CrimeInProgress
-	}
-
 	protected AgentState<AgentType> _currentState;
 	private List<AgentInteraction> _recentlyInteractedAgents = new List<AgentInteraction>();
 	[SerializeField] private float _agentInteractionCooldown = 5f;
 	[SerializeField] protected float _minInteractionDistance = 3f;
-	[SerializeField] private float _criminalFlagCooldown = 30f;
-	[SerializeField] private float _shoutRange = 30f;
-	public bool IsCriminal { get; private set; }
-
+	
 	public void GotoState(AgentType agent, Type newStateType, params object[] args)
 	{
 		if(!newStateType.IsSubclassOf(typeof(BaseState)))
@@ -125,35 +148,19 @@ public abstract class Agent<AgentType> : BaseAgent where AgentType : BaseAgent
 
 	public void AddAgentInteraction(BaseAgent agent)
 	{
-		// Add the agent to the list of agents recently interacted with
-		_recentlyInteractedAgents.Add(new AgentInteraction(agent));
+		// If the agent is already in the list of recently interacted agents
+		var existingAgentInteraction = _recentlyInteractedAgents.FirstOrDefault(a => a.Agent == agent);
+		if (existingAgentInteraction != null)
+		{
+			existingAgentInteraction.TimeInteractedWith = Time.time;
+		}
+		else
+			// Add the agent to the list of agents recently interacted with
+			_recentlyInteractedAgents.Add(new AgentInteraction(agent));
 	}
 
 	protected bool InRange(BaseAgent target)
 	{
 		return Vector3.Distance(transform.position, target.transform.position) <= _minInteractionDistance;
-	}
-
-	public void FlagACriminal()
-	{
-		StartCoroutine(FlagACriminalInternal());
-	}
-
-	private IEnumerator FlagACriminalInternal()
-	{
-		// Agent is a criminal now		
-		IsCriminal = true;
-		
-		// Wait for the criminal cooldown
-		yield return new WaitForSeconds(_criminalFlagCooldown);
-		
-		// Agent is no longer a criminal
-		IsCriminal = false;
-	}
-	
-	protected void Shout(ShoutType shout)
-	{
-		Debug.Log($"{Name} shouted {shout}");
-		World.BroadcastShout(shout, this, _shoutRange);
 	}
 }

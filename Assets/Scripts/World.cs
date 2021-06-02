@@ -71,21 +71,21 @@ public class World : MonoBehaviour
 		return agents.Where(a => a.FilterBy(filter, computer));
 	}
 
-	public static BaseAgent FindSubject(Node subject, IComputer computer)
+	public static BaseAgent FindSubject(Node subject, Program program)
 	{
 		switch(subject)
 		{
 			case SubjectNode subjectNode:
-				return GetClosestAgent(subjectNode.Word, computer);
-			case PredicateNode predicateNode:
-				predicateNode.Run(computer);
+				return GetClosestAgent(subjectNode.Word, program.Computer);
+			case FilterNode predicateNode:
+				predicateNode.Run(program);
 				return predicateNode.Subjects.FirstOrDefault();
 		};
 
 		return null;
 	}
 
-	public static void BroadcastShout<AgentType>(Agent<AgentType>.ShoutType shout, Agent<AgentType> shouter, float range) where AgentType : BaseAgent
+	public static void BroadcastShout(Agent<BaseAgent>.ShoutType shout, BaseAgent shouter, float range)
 	{
 		// Foreach agent in the world that's in range
 		foreach (var agent in FindObjectsOfType<BaseAgent>()

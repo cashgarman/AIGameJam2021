@@ -1,7 +1,6 @@
 ﻿using System;
-using Agents;
-using Programming;
 using Sirenix.OdinInspector;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -11,13 +10,22 @@ public class Game : SerializedMonoBehaviour
 	
 	[SerializeField] private Robot _initiallyControlledAgent;
 	[SerializeField] private bool _mouseMovementEnabled;
+	[SerializeField] private int _startingCoins;
+	[SerializeField] private TMP_Text _coinText;
 
 	public static Robot ControlledRobot { get; set; }
+	public static int Coins { get; set; }
 
 	private void Awake()
 	{
 		_instance = this;
 		ControlledRobot = _initiallyControlledAgent;
+	}
+
+	private void Start()
+	{
+		Coins = _startingCoins;
+		UpdateUI();
 	}
 
 	private void Update()
@@ -38,8 +46,15 @@ public class Game : SerializedMonoBehaviour
 		{
 			ResumeControlledRobotProgram();
 		}
+
+		UpdateUI();
 	}
 
+	private void UpdateUI()
+	{
+		_coinText.text = $"Coins: {Coins:n0}";
+	}
+	
 	public void ResumeControlledRobotProgram()
 	{
 		// Resume the controlled robot's program

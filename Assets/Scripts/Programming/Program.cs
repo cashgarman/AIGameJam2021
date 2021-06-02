@@ -29,11 +29,11 @@ namespace Programming
 			return string.Join(" ", Tokens.Select(t => t.Word));
 		}
 
-		public bool Run(IComputer computer)
+		public bool Run(Program program)
 		{
-			Debug.Log($"Running code '{this}' on {computer.name}");
+			//Debug.Log($"Running code '{this}' on {program.Computer.name}");
 			Status = LineStatus.Running;
-			return RootNode.Run(computer);
+			return RootNode.Run(program);
 		}
 	}
 
@@ -47,6 +47,9 @@ namespace Programming
 
 		public BlockType Type { get; }
 		public List<CodeLine> Lines { get; } = new List<CodeLine>();
+		public bool IsIfStatement => Lines[0].Tokens[0].Word == "if";
+		public bool IsHeardStatement => Lines[0].Tokens[0].Word == "heard";
+		public CodeLine FirstLine => Lines[0];
 
 		public CodeSection(BlockType type = BlockType.Main)
 		{
@@ -82,11 +85,11 @@ namespace Programming
 				Status = LineStatus.Pending;
 			}
 
-			public void Run(IComputer computer)
+			public void Run(Program program)
 			{
-				Debug.Log($"Running code '{Code}' on {computer.name}");
+				Debug.Log($"Running code '{Code}' on {program.Computer.name}");
 				Status = LineStatus.Running;
-				RootNode.Run(computer);
+				RootNode.Run(program);
 			}
 		}
 
@@ -102,6 +105,9 @@ namespace Programming
 		public List<CodeSection> Sections { get; } = new List<CodeSection>();
 		public bool Interrupted { get; set; }
 		public bool RunOnce { get; set; }
+		public IComputer Computer { get; private set; }
+		public BaseAgent Notifier { get; set; }
+		public BaseAgent Target { get; set; }
 
 		public Program()
 		{
@@ -113,8 +119,9 @@ namespace Programming
 		// 	CurrentLines.Add(new LineOfCode(code, rootNode));
 		// }
 
-		public void StartMain()
+		public void StartMain(IComputer computer)
 		{
+			Computer = computer;
 			_currentSection = Sections.FirstOrDefault(s => s.Type == CodeSection.BlockType.Main);
 			if (_currentSection == null)
 				throw new Exception("No main section found in program");
@@ -129,7 +136,7 @@ namespace Programming
 				return;
 
 			// Run the current line of code
-			CurrentLines[_currentLine].Run(computer);
+			CurrentLines[_currentLine].Run(this);
 		}
 
 		public void GotoNextLine()
@@ -149,7 +156,7 @@ namespace Programming
 				if (_currentSection.Type == CodeSection.BlockType.Conditional)
 				{
 					// Return to the last line of code in the main code section
-					StartMain();
+					StartMain(Computer);
 					_currentLine = _interruptedLine;
 					Interrupted = false;
 				}
