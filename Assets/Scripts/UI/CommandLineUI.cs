@@ -56,8 +56,8 @@ namespace UI
                 var program = Compiler.Compile(_commandLineInput.text);
 
                 // Run the command on the currently controlled agent
-                program.RunCurrentLine(Game.ControlledAgent);
-                
+                Game.ControlledAgent.RunProgram(program);
+
                 // Clear the error
                 _errorDisplay.Hide();
                 
@@ -72,6 +72,8 @@ namespace UI
             {
                 // Display the error
                 _errorDisplay.Show(e.Message);
+                Debug.LogError($"{e.Message}\n{e.StackTrace}");
+                throw e;
             }
         }
     }

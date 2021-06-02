@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Agents;
 using JetBrains.Annotations;
 using Sirenix.OdinInspector;
 using TMPro;
@@ -205,7 +206,7 @@ namespace Programming
 		private static CodeLine GetLineOfTokens(IEnumerator<Token> tokenEnumerator)
 		{
 			var line = new CodeLine();
-			while (tokenEnumerator.Current.Type != Token.TokenType.Newline)
+			while (tokenEnumerator.Current != null && tokenEnumerator.Current.Type != Token.TokenType.Newline)
 			{
 				line.AddToken(tokenEnumerator.Current);
 				tokenEnumerator.MoveNext();
@@ -477,7 +478,9 @@ namespace Programming
 
 		public void StartMain()
 		{
-			_currentSection = Sections.First(s => s.Type == CodeSection.BlockType.Main);
+			_currentSection = Sections.FirstOrDefault(s => s.Type == CodeSection.BlockType.Main);
+			if (_currentSection == null)
+				throw new Exception("No main section found in program");
 		}
 
 		public void RunCurrentLine(IComputer computer)
@@ -549,14 +552,6 @@ namespace Programming
 		{
 			Sections.Add(section);
 		}
-	}
-
-	public interface IComputer
-	{
-		Transform transform { get; }
-		string name { get; set; }
-		void ExecuteCommand(string command, params object[] arguments);
-		bool HasInteractedWithRecently(BaseAgent agent);
 	}
 
 	internal class AdjectiveNode : LeafNode

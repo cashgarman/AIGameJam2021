@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Agents;
 using Programming;
 using States;
 using TMPro;
@@ -53,11 +54,13 @@ public class Robot : Agent<Robot>, IComputer
     [SerializeField] private Transform _hands;
     [SerializeField] private Transform _pluginSlot;
     public IPickup Holding { get; private set; }
+    public float HackingSpeed => _hackingSpeed;
 
     // Brain
     [SerializeField] private bool _runCode = false;
     [SerializeField, TextArea(5, 20)] private string code;
     private Program _program;
+    [SerializeField] private float _hackingSpeed = 1f;
 
     private void Awake()
     {
@@ -410,7 +413,34 @@ public class Robot : Agent<Robot>, IComputer
             case "idle":
                 Idle();
                 break;
+            
+            case "hack":
+                var target = arguments[0] as IHackable;
+
+                if (target == null)
+                {
+                    Debug.Log($"Tried to hack unhackable target {target.Name}");
+                    return;
+                }
+
+                target.OnHackingStarted(this);
+                
+                //asdf
+                    // TODO: Listen for any movement or other interruption then run the following
+                //target.OnHackingInterrupted();
+                
+                break;
+            
+            default:
+                throw new Exception($"{name} tried to run unknown command '{command}'");
         }
+    }
+
+    public void RunProgram(Program program)
+    {
+        _program = program;
+        _program.StartMain();
+        _program.RunCurrentLine(Game.ControlledAgent);
     }
 
     private IEnumerator WaitInternal(DelayNode delayNode, Action callback)
@@ -427,7 +457,7 @@ public class Robot : Agent<Robot>, IComputer
     {
         Debug.Log($"{name} was clicked");
     }
-
+    
     public override float GetOrderBy(string sortType)
     {
         return sortType switch

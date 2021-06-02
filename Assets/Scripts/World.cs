@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Agents;
 using Programming;
 using UnityEngine;
 
@@ -18,6 +19,7 @@ public class World : MonoBehaviour
 			"charger" => typeof(Charger),
 			"battery" => typeof(Battery),
 			"robot" => typeof(Robot),
+			"parkingmeter" => typeof(ParkingMeter),
 			_ => throw new Exception($"Tried to get type from unknown name {type}")
 		};
 	}
