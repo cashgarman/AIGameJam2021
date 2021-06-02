@@ -29,6 +29,7 @@ namespace Programming
 			Newline,
 			Delay,
 			Idle,
+			Notification,
 		}
 
 		public string Word { get; }
@@ -315,8 +316,14 @@ namespace Programming
 					var subjectBTokens = rest.SkipWhile(token => token.Type != Token.TokenType.InteractionDeliminator && token.Word != first.Deliminator).Skip(1).ToArray();
 					return new InteractionNode(new VerbNode(first), CreateNode(subjectATokens), CreateNode(subjectBTokens));
 				case Token.TokenType.Conditional:
-					// (Conditional) [Comparison]
-					return new ConditionalNode(new IfNode(first), CreateNode(rest) as ComparisonNode);
+					return first.Word switch
+					{
+						// If statement: (Conditional) [Comparison]
+						"if" => new IfNode(CreateNode(rest) as ComparisonNode),
+						
+						// Heard statement: (Conditional) [Notification]
+						"heard" => new HeardNode(new LeafNode(rest.First()))
+					};
 				case Token.TokenType.Delay:
 					// (Delay) [Comparison]
 					return new DelayNode(new WaitUntilNode(first), CreateNode(rest) as ComparisonNode);
@@ -398,13 +405,6 @@ namespace Programming
 		}
 	}
 	
-	internal class IfNode : LeafNode
-	{
-		public IfNode(Token token) : base(token)
-		{
-		}
-	}
-
 	internal class EqualityNode : LeafNode
 	{
 		public EqualityNode(Token token) : base(token)
@@ -415,13 +415,6 @@ namespace Programming
 	internal class WaitUntilNode : LeafNode
 	{
 		public WaitUntilNode(Token token) : base(token)
-		{
-		}
-	}
-	
-	internal class IdleLeafNode : LeafNode
-	{
-		public IdleLeafNode(Token token) : base(token)
 		{
 		}
 	}
@@ -448,9 +441,14 @@ namespace Programming
 					subject = World.FindSubject(subjectNode, computer);
 					break;
 				
+				case PredicateNode predicateNode:
+					predicateNode.Run(computer);
+					subject = predicateNode.Subjects.FirstOrDefault();
+					break;
+				
 				case QualifierNode qualifierNode:
 					qualifierNode.Run(computer);
-					subject = qualifierNode.Subject;
+					subject = qualifierNode.Subjects.FirstOrDefault();
 					break;
 			};
 			
@@ -466,7 +464,7 @@ namespace Programming
 	{
 		private readonly AdjectiveNode _adjective;
 		private readonly Node _subject;
-		private BaseAgent _foundSubject;
+		private IEnumerable<BaseAgent> _foundSubjects;
 
 		public QualifierNode(AdjectiveNode adjective, Node subject)
 		{
@@ -475,7 +473,7 @@ namespace Programming
 			_subject = subject;
 		}
 
-		public BaseAgent Subject => _foundSubject;
+		public IEnumerable<BaseAgent> Subjects => _foundSubjects;
 
 		public override bool Run(IComputer computer)
 		{
@@ -483,26 +481,26 @@ namespace Programming
 			switch(_subject)
 			{
 				case SubjectNode subjectNode:
-					_foundSubject = _adjective.Word switch
+					_foundSubjects = _adjective.Word switch
 					{
 						// TODO: Refactor this to use lists of BaseAgents everywhere, so we can support multiple-adjective filtering
-						"random" => World.GetRandomAgent(subjectNode.Word, computer),
-						"nearest" => World.GetClosestAgent(subjectNode.Word, computer),
+						"random" => World.GetRandomAgents(subjectNode.Word, computer),
+						"nearest" => World.GetClosestAgents(subjectNode.Word, computer),
 						// TODO: Add fullest and emptiest adjectives
 						_ => throw new Exception($"Unhandled adjective in qualifying node {_adjective.Word}")
 					};
 					break;
 				case QualifierNode qualifierNode:
 					qualifierNode.Run(computer);
-					_foundSubject = qualifierNode.Subject;
+					_foundSubjects = qualifierNode.Subjects;
 					break;
 				case PredicateNode predicateNode:
 					predicateNode.Run(computer);
-					_foundSubject = _adjective.Word switch
+					_foundSubjects = _adjective.Word switch
 					{
 						// TODO: Refactor this to use lists of BaseAgents everywhere, so we can support multiple-adjective filtering
-						"random" => Util.RandomElement(predicateNode.Subjects),
-						"nearest" => predicateNode.Subjects.OrderBy(s => Vector3.Distance(s.transform.position, computer.transform.position)).FirstOrDefault(),
+						"random" => predicateNode.Subjects.Shuffle(),
+						"nearest" => predicateNode.Subjects.OrderBy(s => Vector3.Distance(s.transform.position, computer.transform.position)),
 						_ => throw new Exception($"Unhandled adjective in qualifying node {_adjective.Word}")
 					};
 					break;
@@ -519,6 +517,7 @@ namespace Programming
 		private readonly Node _subject;
 		
 		private IEnumerable<BaseAgent> _foundSubjects;
+		public IEnumerable<BaseAgent> Subjects => _foundSubjects;
 
 		public PredicateNode(FilterNode filter, Node subject)
 		{
@@ -526,8 +525,6 @@ namespace Programming
 			_filter = filter;
 			_subject = subject;
 		}
-
-		public IEnumerable<BaseAgent> Subjects => _foundSubjects;
 
 		public override bool Run(IComputer computer)
 		{
@@ -550,6 +547,10 @@ namespace Programming
 				case PredicateNode predicateNode:
 					predicateNode.Run(computer);
 					_foundSubjects = World.FilterAgents(predicateNode.Subjects, computer, _filter.Word);
+					break;
+				case QualifierNode qualifierNode:
+					qualifierNode.Run(computer);
+					_foundSubjects = World.FilterAgents(qualifierNode.Subjects, computer, _filter.Word);
 					break;
 			};
 			
@@ -595,19 +596,20 @@ namespace Programming
 			return false;
 		}
 	}
-	
-	internal class ConditionalNode : BranchNode
+
+	internal abstract class ConditionNode : BranchNode
 	{
-		private readonly IfNode _if;
+	}
+
+	internal class IfNode : ConditionNode
+	{
 		private readonly ComparisonNode _comparison;
 
-		public ConditionalNode(IfNode @if, ComparisonNode comparison)
+		public IfNode(ComparisonNode comparison)
 		{
 			if (comparison == null)
 				throw new Exception($"A conditional node was given an invalid comparison");
 			
-			Word = @if.Word;
-			_if = @if;
 			_comparison = comparison;
 		}
 
@@ -617,7 +619,7 @@ namespace Programming
 			return _comparison.Run(computer);
 		}
 	}
-	
+
 	internal class ComparisonNode : BranchNode
 	{
 		private readonly Node _subject;
@@ -651,7 +653,7 @@ namespace Programming
 				
 				case QualifierNode qualifierNode:
 					qualifierNode.Run(computer);
-					subject = qualifierNode.Subject;
+					subject = qualifierNode.Subjects.FirstOrDefault();
 					break;
 				
 				case PredicateNode predicateNode:
@@ -677,7 +679,24 @@ namespace Programming
 			};
 		}
 	}
-	
+
+	internal class HeardNode : ConditionNode
+	{
+		private readonly LeafNode _notification;
+
+		public string Notification => _notification.Word;
+
+		public HeardNode(LeafNode notification)
+		{
+			_notification = notification ?? throw new Exception($"A heard notification node was given an invalid notification");
+		}
+
+		public override bool Run(IComputer computer)
+		{
+			return true;
+		}
+	}
+
 	internal class DelayNode : BranchNode
 	{
 		private readonly WaitUntilNode _waitUntil;
@@ -714,7 +733,7 @@ namespace Programming
 			}
 		}
 	}
-	
+
 	internal class IdleNode : BranchNode
 	{
 		private bool _waiting;
@@ -750,9 +769,9 @@ namespace Programming
 		public abstract bool Run(IComputer computer);
 	}
 
-	internal abstract class LeafNode : Node
+	internal class LeafNode : Node
 	{
-		protected LeafNode(Token token)
+		public LeafNode(Token token)
 		{
 			Word = token.Word;
 		}

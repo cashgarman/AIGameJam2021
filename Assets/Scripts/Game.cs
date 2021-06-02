@@ -28,7 +28,7 @@ public class Game : SerializedMonoBehaviour
 			if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out var hit))
 			{
 				// Pause the robot's program and move to the targeted location
-				ControlledRobot.Program.Pause();
+				ControlledRobot.Program?.Pause();
 				ControlledRobot.MoveToPositionWithCallback(hit.point, null);
 			}
 		}

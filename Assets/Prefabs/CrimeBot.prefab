@@ -1012,7 +1012,7 @@ MonoBehaviour:
     PrefabModificationsReferencedUnityObjects: []
     PrefabModifications: []
     SerializationNodes: []
-  _agentInteractionCooldown: 7.5
+  _agentInteractionCooldown: 4
   _minInteractionDistance: 5
   _maxBatteryLevel: 100
   _idleBatteryDrainPerSecond: 0

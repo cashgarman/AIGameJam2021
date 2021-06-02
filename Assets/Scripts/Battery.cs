@@ -98,9 +98,8 @@ public class Battery : Agent<Battery>, IPickup
         {
             "empty" => _charge <= _chargeLowThreshold, // TODO: Should this be zero, or close enough
             "full" => _charge >= _chargeHighThreshold, // TODO: Should this be zero, or close enough
-            "next" => !computer.HasInteractedWithRecently(this),
             "unplugged" => !IsPluggedIn,
-            _ => throw new Exception($"Invalid filter provided to {GetType().Name}: {filter}")
+            _ => base.FilterBy(filter, computer)
         };
     }
 }

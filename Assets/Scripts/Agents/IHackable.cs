@@ -11,5 +11,6 @@ namespace Agents
 		void OnHacked();
 		void OnHackingStarted(Robot hacker, Action callback);
 		void OnHackingInterrupted();
+		bool IsCrimeToHack { get; }
 	}
 }

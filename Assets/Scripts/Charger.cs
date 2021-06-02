@@ -30,19 +30,4 @@ public class Charger : Agent<Charger>
             battery.OnNearbyCharger(this);
         }
     }
-    
-    public override float GetOrderBy(string sortType)
-    {
-        // TODO: Nothing to sort chargers by right now
-        return 1;
-    }
-
-    public override bool FilterBy(string filter, IComputer computer)
-    {
-        return filter switch
-        {
-            "next" => !computer.HasInteractedWithRecently(this),
-            _ => throw new Exception($"Invalid filter provided to {GetType().Name}: {filter}")
-        };
-    }
 }

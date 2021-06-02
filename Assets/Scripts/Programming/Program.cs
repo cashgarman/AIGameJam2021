@@ -161,6 +161,8 @@ namespace Programming
 					if (!RunOnce)
 						// Restart the current section of code
 						RestartSection();
+					else
+						_halted = true;
 				}
 			}
 		}
@@ -190,6 +192,9 @@ namespace Programming
 
 		public void Pause()
 		{
+			if (_halted)
+				return;
+			
 			Debug.Log($"Pausing program on line {CurrentLine}");
 			
 			// Store the interrupted line and section of code so we can return to it
@@ -202,6 +207,9 @@ namespace Programming
 
 		public void Resume(IComputer computer)
 		{
+			if (_halted)
+				return;
+			
 			// Return to the last line and section of code in the main code section
 			_currentSection = _interruptedSection;
 			_currentLine = _interruptedLine;

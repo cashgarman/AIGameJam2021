@@ -18,12 +18,6 @@ namespace Agents
 
 		private Coroutine _hackingCoroutine;
 
-		public override float GetOrderBy(string sortType)
-		{
-			// NOTE: Note used
-			return 1;
-		}
-
 		public override bool FilterBy(string filter, IComputer computer)
 		{
 			// NOTE: Note used
@@ -31,6 +25,7 @@ namespace Agents
 		}
 
 		public float HackingDifficulty => 5f;
+		public bool IsCrimeToHack => true;
 		public void OnHacked()
 		{
 			Debug.Log($"{Name} has been hacked");	
@@ -38,6 +33,15 @@ namespace Agents
 
 		public void OnHackingStarted(Robot hacker, Action callback)
 		{
+			if (IsCrimeToHack)
+			{
+				// Flag the hacker as a criminal
+				hacker.FlagACriminal();
+				
+				// Make a shout out that a crime is in progress
+				Shout(ShoutType.CrimeInProgress);
+			}
+			
 			Debug.Log($"{hacker.Name} is hacking {Name}");
 			_hackingCoroutine = StartCoroutine(StartHacking(hacker, callback));
 		}

@@ -20,6 +20,7 @@ public class World : MonoBehaviour
 			"battery" => typeof(Battery),
 			"robot" => typeof(Robot),
 			"parkingmeter" => typeof(ParkingMeter),
+			"waypoint" => typeof(Waypoint),
 			_ => throw new Exception($"Tried to get type from unknown name {type}")
 		};
 	}
@@ -27,6 +28,11 @@ public class World : MonoBehaviour
 	public static BaseAgent GetRandomAgent(string type, IComputer computer)
 	{
 		return Util.RandomElement(FindObjectsOfType(GetTypeFromName(type, computer)).Where(a => a != computer)) as BaseAgent;
+	}
+
+	public static IEnumerable<BaseAgent> GetRandomAgents(string type, IComputer computer)
+	{
+		return FindObjectsOfType(GetTypeFromName(type, computer)).Where(a => a != computer).Select(a => a as BaseAgent).Shuffle();
 	}
 
 	public static BaseAgent GetClosestAgent(string type, IComputer computer, string filter = null, bool includeSelf = false)
@@ -52,11 +58,11 @@ public class World : MonoBehaviour
 			.FirstOrDefault();
 	}
 
-	public static IEnumerable<BaseAgent> GetClosestAgents(string type, IComputer computer, string filter, bool includeSelf = false)
+	public static IEnumerable<BaseAgent> GetClosestAgents(string type, IComputer computer, string filter = null, bool includeSelf = false)
 	{
 		return FindObjectsOfType(GetTypeFromName(type, computer)).Select(a => a as BaseAgent)
 			.Where(a => a != computer || includeSelf)
-			.Where(a => a.FilterBy(filter, computer))
+			.Where(a => filter == null || a.FilterBy(filter, computer))
 			.OrderBy(a => Vector3.Distance(a.transform.position, computer.transform.position));
 	}
 
@@ -77,5 +83,16 @@ public class World : MonoBehaviour
 		};
 
 		return null;
+	}
+
+	public static void BroadcastShout<AgentType>(Agent<AgentType>.ShoutType shout, Agent<AgentType> shouter, float range) where AgentType : BaseAgent
+	{
+		// Foreach agent in the world that's in range
+		foreach (var agent in FindObjectsOfType<BaseAgent>()
+			.Where(a => Vector3.Distance(a.transform.position, shouter.transform.position) < range))
+		{
+			// Let the agent know about the shout
+			agent.OnHeardShout(shout, shouter);
+		}
 	}
 }

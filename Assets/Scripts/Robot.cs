@@ -137,12 +137,12 @@ public class Robot : Agent<Robot>, IComputer
         GotoState<RobotMovingToPositionState>(this, destination, onReached);
     }
 
-    public void MoveToObjectWithCallback(Transform target, Action onReached = null, Func<bool> shouldContinueProvider = null)
+    public void MoveToObjectWithCallback(Transform target, Action onReached = null, Func<bool> abortProvider = null)
     {
         InterruptProcesses();
        
         NavAgent.isStopped = false;
-        GotoState<RobotMovingToTargetState>(this, target, onReached, shouldContinueProvider);
+        GotoState<RobotMovingToTargetState>(this, target, onReached, abortProvider);
     }
 
     private void InterruptProcesses()
@@ -277,6 +277,7 @@ public class Robot : Agent<Robot>, IComputer
                 {
                     // Wait a bit then try to run the same line again
                     // TODO: Find a better place to put this magic number
+                    Debug.Log($"ERROR: Couldn't find a matching subject while running '{Program.CurrentLine}'");
                     StartCoroutine(Util.Delay(1f, () => _program.RunCurrentLine(this)));
                     return;
                 }
@@ -291,7 +292,9 @@ public class Robot : Agent<Robot>, IComputer
                         _program.RunCurrentLine(this);
                     // }
                 });
+                
                 AddAgentInteraction(agent);
+                
                 break;
 
             case "pickup":
@@ -540,8 +543,7 @@ public class Robot : Agent<Robot>, IComputer
         {
             "empty" => _batteryLevel <= _batteryLowLevel, // TODO: Should this be zero, or close enough
             "full" => _batteryLevel >= _batteryHighLevel, // TODO: Should this be zero, or close enough
-            "next" => !computer.HasInteractedWithRecently(this),
-            _ => throw new Exception($"Invalid filter provided to {GetType().Name}: {filter}")
+            _ => base.FilterBy(filter, computer)
         };
     }
 }

@@ -18,18 +18,6 @@ namespace Agents
 
 		private Coroutine _hackingCoroutine;
 
-		public override float GetOrderBy(string sortType)
-		{
-			// NOTE: Note used
-			return 1;
-		}
-
-		public override bool FilterBy(string filter, IComputer computer)
-		{
-			// NOTE: Note used
-			return true;
-		}
-
 		public float HackingDifficulty => 5f;
 		public void OnHacked()
 		{
