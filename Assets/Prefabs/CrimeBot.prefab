@@ -1545,7 +1545,7 @@ GameObject:
   - component: {fileID: 1585599391194277927}
   - component: {fileID: 8103734848907473572}
   m_Layer: 0
-  m_Name: MouseCollider
+  m_Name: AgentUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

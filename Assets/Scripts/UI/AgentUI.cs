@@ -1,4 +1,5 @@
-﻿using DG.Tweening;
+﻿using System;
+using DG.Tweening;
 using UnityEngine;
 
 namespace UI
@@ -15,14 +16,26 @@ namespace UI
 		private bool _selected;
 		[SerializeField] private CanvasGroup _agentUICanvasGroup;
 		[SerializeField] private float _fadeDuration;
+		private Color _initialHighlightColour;
 
 		public BaseAgent Agent => _agent;
 
 		private void Awake()
 		{
 			_agent = GetComponentInParent<BaseAgent>();
+			_initialHighlightColour = _highlightMeshRenderer.material.color;
 			_agentUICanvasGroup.DOFade(0, 0);
 			_highlightMeshRenderer.material.DOFade(0, 0);
+		}
+
+		private void Update()
+		{
+			// Always show the UI for the controlled robot
+			if (_agent == Game.ControlledRobot)
+			{
+				_agentUICanvasGroup.alpha = 1;
+				_highlightMeshRenderer.material.color = Color.clear;
+			}
 		}
 
 		private void OnMouseEnter()
