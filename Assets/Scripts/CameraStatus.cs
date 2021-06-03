@@ -13,9 +13,8 @@ public class CameraStatus : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        marker = Resources.Load<GameObject>("CamMarker");
         if(gameObject.name == "WRHS_Cam1" || gameObject.name == "WRHS_Cam2") { pwnd = true; }
-        //Instantiate(marker, transform);
+        Instantiate(marker, transform);
         stateCheck = pwnd;
         ChangeColor();
     }
@@ -33,11 +32,11 @@ public class CameraStatus : MonoBehaviour
     {
         if (pwnd)
         {
-            //GetComponentInChildren<SetColor>().SetMarkerGreen();
+            GetComponentInChildren<SetColor>().SetMarkerGreen();
         }
         else
         {
-            //GetComponentInChildren<SetColor>().SetMarkerRed();
+            GetComponentInChildren<SetColor>().SetMarkerRed();
         };
     }
 }

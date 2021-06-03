@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 7586883563095719460}
   - component: {fileID: 7586883563095719465}
   - component: {fileID: 7586883563095719466}
-  - component: {fileID: 7586883563095719467}
+  - component: {fileID: 1944980936961597944}
   m_Layer: 6
   m_Name: CamMarker
   m_TagString: CamTag
@@ -28,7 +28,7 @@ Transform:
   m_GameObject: {fileID: 7586883563095719461}
   m_LocalRotation: {x: -0.1753256, y: 0.3909229, z: -0.09958389, w: 0.8980664}
   m_LocalPosition: {x: 0.45, y: 9.88, z: -4.22}
-  m_LocalScale: {x: 10, y: 1, z: 10}
+  m_LocalScale: {x: 10, y: 10, z: 10}
   m_Children: []
   m_Father: {fileID: 0}
   m_RootOrder: 0
@@ -82,7 +82,7 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &7586883563095719467
+--- !u!114 &1944980936961597944
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -91,6 +91,6 @@ MonoBehaviour:
   m_GameObject: {fileID: 7586883563095719461}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c33e2fa909b50ad4a9387190caafa54c, type: 3}
+  m_Script: {fileID: 11500000, guid: 2fa44aaa029c42645adfdf3fd2dd0cb1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 

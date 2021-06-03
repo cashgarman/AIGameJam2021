@@ -8,6 +8,8 @@ public class CameraChangeController : MonoBehaviour
     GameObject currentCam;
     GameObject newCam;
     GameObject staticCam;
+    string startCam = "WRHS_Cam1";
+
     public Dropdown myDropdown;
     [SerializeField]
     private GameObject[] dropdownObjects;
@@ -17,7 +19,8 @@ public class CameraChangeController : MonoBehaviour
         staticCam = GameObject.Find("StaticCam");
         dropdownObjects = GameObject.FindGameObjectsWithTag("Cam"); // For example
         Populate(myDropdown, dropdownObjects);
-        currentCam = GameObject.Find(myDropdown.options[0].text);
+        currentCam = staticCam;
+        newCam = GameObject.Find("WRHS_Cam1");
         ChangeDisplay();
     }
 
@@ -36,21 +39,21 @@ public class CameraChangeController : MonoBehaviour
 
     public void ChangeDisplay()
     {
-        Debug.Log(myDropdown.options[myDropdown.value].text);
         newCam = GameObject.Find(myDropdown.options[myDropdown.value].text);
-        Debug.Log(newCam.GetComponent<CameraStatus>().pwnd);
+        //Debug.Log("Name: "+newCam.name+"Pwnd:"+newCam.GetComponent<CameraStatus>().pwnd);
 
-        if (newCam.GetComponent<CameraStatus>().pwnd)
+        //If already on the static camera and not pwnd, do nothing
+        if (!newCam.GetComponent<CameraStatus>().pwnd)
+        {
+            Debug.Log("Got Here");
+            newCam = staticCam;  
+        }
+           
+        if(newCam != currentCam)
         {
             currentCam.GetComponent<Camera>().enabled = false;
             newCam.GetComponent<Camera>().enabled = true;
             currentCam = newCam;
-        }
-        else if (currentCam != staticCam) 
-        {
-            currentCam.GetComponent<Camera>().enabled = false;
-            GameObject.Find("StaticCam").SetActive(true);
-            currentCam = GameObject.Find("StaticCam");
-        }
+        }       
     }
 }

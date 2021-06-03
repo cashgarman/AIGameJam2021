@@ -14,7 +14,7 @@ public class CoinSpawn : MonoBehaviour
     void Update()
     {
         atmState = atm.GetComponent<ATM>().state.ToString();
-        Debug.Log("Coin Spawn atmState is:" + atmState);
+        //Debug.Log("Coin Spawn atmState is:" + atmState);
 
         if (atmState == "seduced")
         {

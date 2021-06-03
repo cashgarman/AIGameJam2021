@@ -17,15 +17,15 @@ public class ATM : MonoBehaviour
         switch (state.ToString())
         {
             case "idle":
-                Debug.Log("State = Idle");
+                //Debug.Log("State = Idle");
                 MoveBarrierDown();
                 break;
             case "swooning":
-                Debug.Log("State = Swooning");
+                //Debug.Log("State = Swooning");
                 MoveBarrierUp();
                 break;
             case "seduced":
-                Debug.Log("State = Seduced");
+                //Debug.Log("State = Seduced");
                 if(cooldown > 0)
                 {
                     cooldown -= Time.deltaTime;
