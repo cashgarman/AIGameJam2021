@@ -91,6 +91,7 @@ public class Robot : Agent<Robot>, IComputer, IPickup
     public float AttackDamage => _attackDamage;
     [SerializeField] private float _fightingRange;
     public float FightingRange => _fightingRange;
+    public bool IsRunningProgram => _program is {Interrupted: false};
 
     protected override void Awake()
     {

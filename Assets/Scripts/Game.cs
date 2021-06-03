@@ -14,6 +14,9 @@ public class Game : SerializedMonoBehaviour
 	[SerializeField] private TMP_Text _coinText;
 
 	private static Robot _controlledRobot;
+	private Robot[] _allRobots;
+	private int _currentRobotIndex;
+
 	public static Robot ControlledRobot
 	{
 		get => _controlledRobot;
@@ -35,11 +38,16 @@ public class Game : SerializedMonoBehaviour
 	{
 		Coins = _startingCoins;
 		UpdateUI();
+		
+		_allRobots = FindObjectsOfType<Robot>();
+		_currentRobotIndex = _allRobots.IndexOf(r => r == ControlledRobot);
 	}
 
 	private void Update()
 	{
-		if (!ControlledRobot.IsKnockedOut && _mouseMovementEnabled && Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+		Time.timeScale = Input.GetKey(KeyCode.LeftShift) ? 20f : 1f;
+
+		if (!ControlledRobot.IsKnockedOut && !ControlledRobot.IsRunningProgram && _mouseMovementEnabled && Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
 		{
 			// CREDIT: https://answers.unity.com/questions/1386777/get-origin-of-plane-in-world-coordinates.html
 			if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out var hit))
@@ -56,7 +64,34 @@ public class Game : SerializedMonoBehaviour
 			ResumeControlledRobotProgram();
 		}
 
+		if (Input.GetKeyDown(KeyCode.Tab))
+		{
+			++_currentRobotIndex;
+			if (_currentRobotIndex == _allRobots.Length)
+				_currentRobotIndex = 0;
+
+			PossessRobot(_allRobots[_currentRobotIndex]);
+		}
+
+		if (Input.GetKeyDown(KeyCode.F1))
+		{
+			ToggleCurrentRobotProgramRunning();
+		}
+
 		UpdateUI();
+	}
+
+	private static void PossessRobot(Robot robot)
+	{
+		ControlledRobot = robot;
+	}
+
+	public void ToggleCurrentRobotProgramRunning()
+	{
+		if(!ControlledRobot.Program.Interrupted)
+			ControlledRobot.Program.Pause();
+		else
+			ControlledRobot.Program.Resume(ControlledRobot);
 	}
 
 	private void UpdateUI()

@@ -7,11 +7,6 @@ using UnityEngine;
 
 public class World : MonoBehaviour
 {
-	private void Update()
-	{
-		Time.timeScale = Input.GetKey(KeyCode.Tab) ? 20f : 1f;
-	}
-
 	private static Type GetTypeFromName(string type, IComputer computer)
 	{
 		return type switch
