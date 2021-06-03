@@ -27,7 +27,7 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6671025121681254855}
-  m_LocalRotation: {x: 0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0.18204808, y: 0.00000047683716, z: 3.131471}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
@@ -118,6 +118,13 @@ MonoBehaviour:
     PrefabModificationsReferencedUnityObjects: []
     PrefabModifications: []
     SerializationNodes: []
+  _shoutRange: 30
+  _criminalFlagCooldown: 30
+  _maxHealth: 0
+  _healthOverride: 0
+  _healthDisplay: {fileID: 0}
+  _home: {fileID: 0}
   _agentInteractionCooldown: 5
   _minInteractionDistance: 3
   _progress: {fileID: 0}
+  _waypointType: 0

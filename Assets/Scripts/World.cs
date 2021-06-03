@@ -33,7 +33,7 @@ public class World : MonoBehaviour
 	public static BaseAgent GetClosestAgent(string type, IComputer computer, string filter = null, bool includeSelf = false)
 	{
 		return FindObjectsOfType(GetTypeFromName(type, computer)).Select(a => a as BaseAgent)
-			.Where(a => a != computer || includeSelf)
+			.Where(a => (a != computer || includeSelf) && a != (computer as BaseAgent).PluggedIn)
 			.OrderBy(a => Vector3.Distance(a.transform.position, computer.transform.position))
 			.FirstOrDefault();
 	}
@@ -56,7 +56,7 @@ public class World : MonoBehaviour
 	public static IEnumerable<BaseAgent> GetClosestAgents(string type, IComputer computer, string filter = null, bool includeSelf = false)
 	{
 		return FindObjectsOfType(GetTypeFromName(type, computer)).Select(a => a as BaseAgent)
-			.Where(a => a != computer || includeSelf)
+			.Where(a => (a != computer || includeSelf) && a != (computer as BaseAgent).PluggedIn)
 			.Where(a => filter == null || a.FilterBy(filter, computer))
 			.OrderBy(a => Vector3.Distance(a.transform.position, computer.transform.position));
 	}

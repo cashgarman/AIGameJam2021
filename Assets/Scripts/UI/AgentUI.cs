@@ -1,52 +1,43 @@
-﻿using UnityEngine;
+﻿using DG.Tweening;
+using UnityEngine;
 
 namespace UI
 {
 	public class AgentUI : MonoBehaviour
 	{
 		[SerializeField] private bool _informAgentOfClick = true;
-		[SerializeField] private Transform _highlight;
+		[SerializeField] private MeshRenderer _highlightMeshRenderer;
 		[SerializeField] private bool _highlightable;
 		[SerializeField] private bool _selectable;
 
 		private BaseAgent _agent;
-		private Vector3 _initialHighlightScale;
 		private bool _highlighted;
 		private bool _selected;
-		
+		[SerializeField] private CanvasGroup _agentUICanvasGroup;
+		[SerializeField] private float _fadeDuration;
+
 		public BaseAgent Agent => _agent;
 
 		private void Awake()
 		{
-			_agent = GetComponent<BaseAgent>();
-			_initialHighlightScale = _highlight.localScale;
+			_agent = GetComponentInParent<BaseAgent>();
+			_agentUICanvasGroup.DOFade(0, 0);
+			_highlightMeshRenderer.material.DOFade(0, 0);
 		}
 
 		private void OnMouseEnter()
 		{
 			if (!_highlightable)
 				return;
-		
-			// Show the highlight
-			ResetHighlight();
-			SetHighlightVisible(true);
+
+			_agentUICanvasGroup.DOFade(1, _fadeDuration);
+			_highlightMeshRenderer.material.DOFade(1, _fadeDuration);
 		}
 
 		private void OnMouseExit()
 		{
-			// Hide the highlight
-			_highlighted = false;
-			SetHighlightVisible(_selected);
-		}
-	
-		private void SetHighlightVisible(bool visible)
-		{
-			_highlight.gameObject.SetActive(visible);
-		}
-
-		private void ResetHighlight()
-		{
-			_highlight.localScale = _initialHighlightScale;
+			_agentUICanvasGroup.DOFade(0, _fadeDuration);
+			_highlightMeshRenderer.material.DOFade(0, _fadeDuration);
 		}
 
 		private void OnMouseUp()
@@ -68,8 +59,8 @@ namespace UI
 
 		public void OnUnselected()
 		{
-			_selected = false;
-			SetHighlightVisible(_highlighted);
+			// _selected = false;
+			// SetHighlightVisible(_highlighted);
 		}
 	}
 }

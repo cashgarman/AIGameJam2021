@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using Programming;
 using UI;
 using UnityEngine;
 
@@ -8,6 +7,13 @@ namespace Agents
 {
 	public class Waypoint : Agent<Waypoint>
 	{
+		public enum WaypointType
+		{
+			Police,
+			Pedestrian,
+			Player
+		}
+		
 		public override string Name => "Parking Meter";
 		
 		[SerializeField] private ProgressUI _progress;
@@ -17,8 +23,10 @@ namespace Agents
 		public override BaseAgent PluggedIn { get; set; }
 
 		private Coroutine _hackingCoroutine;
+		[SerializeField] private WaypointType _waypointType;
 
 		public float HackingDifficulty => 5f;
+
 		public void OnHacked()
 		{
 			Debug.Log($"{Name} has been hacked");	
@@ -44,6 +52,17 @@ namespace Agents
 			yield return new WaitForSeconds(duration);
 			OnHacked();
 			callback();
+		}
+
+		public override bool FilterBy(string filter, IComputer computer)
+		{
+			return filter switch
+			{
+				"police" => _waypointType == WaypointType.Police,
+				"pedestrian" => _waypointType == WaypointType.Pedestrian,
+				"my" => _waypointType == WaypointType.Player,
+				_ => base.FilterBy(filter, computer)
+			};
 		}
 	}
 }

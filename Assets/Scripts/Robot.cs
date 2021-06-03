@@ -51,6 +51,7 @@ public class Robot : Agent<Robot>, IComputer, IPickup
     [SerializeField] public float _batteryChargeTransferPerSecond;
     public bool FullyCharged => _batteryLevel >= 0.99f * _maxBatteryLevel;
     public bool IsBatteryLow => _batteryLevel <= _batteryLowLevel;
+    public bool IsBatteryEmpty => _batteryLevel == 0f;
     public float MinChargedBatteryLevel => _minChargedBatteryLevel;
     [SerializeField] private float _batteryLevelOverride;
     [SerializeField] private float _minBatteryLevelToReenable;
