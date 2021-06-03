@@ -1,5 +1,4 @@
 using DG.Tweening;
-using Unity.VisualScripting;
 using UnityEngine;
 
 public class CameraController : MonoBehaviour
@@ -18,6 +17,7 @@ public class CameraController : MonoBehaviour
 
         // TODO: Clamp the zoom distance
 
-        Camera.main.transform.position += Camera.main.transform.forward * (Input.GetAxis("Mouse ScrollWheel") * _zoomSpeed);
+        if(Camera.main != null)
+            Camera.main.transform.position += Camera.main.transform.forward * (Input.GetAxis("Mouse ScrollWheel") * _zoomSpeed);
     }
 }

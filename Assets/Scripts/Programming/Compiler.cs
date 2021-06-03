@@ -72,9 +72,7 @@ namespace Programming
 		private static Compiler _instance;
 		
 		[SerializeField] private TMP_InputField _commandInput;
-		[SerializeField] private Transform _tokenList;
-		[SerializeField] private TokenUI _tokenPrefab;
-		[SerializeField] private Dictionary<Token.TokenType, Color> _typeColours = new Dictionary<Token.TokenType, Color>();
+		// [SerializeField] private Dictionary<Token.TokenType, Color> _typeColours = new Dictionary<Token.TokenType, Color>();
 		[SerializeField] private List<TokenDefinition> _tokens = new List<TokenDefinition>();
 
 		private void Awake()
@@ -83,7 +81,6 @@ namespace Programming
 		
 			_commandInput.onValueChanged.AddListener(OnCommandChanged);
 			
-			_tokenList.ClearChildren();
 
 			// Load all the valid tokens
 			Util.PopulateArrayFromJSON(_tokens, Resources.Load<TextAsset>("tokens").text);
@@ -350,21 +347,6 @@ namespace Programming
 			// AddTokensToUI(ParseTokens(command));
 		}
 
-		private void AddTokensToUI(IEnumerable<Token> tokens)
-		{
-			_tokenList.ClearChildren();
-			foreach (var token in tokens)
-			{
-				AddTokenToUI(token);
-			}
-		}
-
-		private void AddTokenToUI(Token token)
-		{
-			Instantiate(_tokenPrefab, _tokenList).Init(token);
-			RefreshLayoutGroupsImmediateAndRecursive(_tokenList.gameObject);
-		}
-
 		// CREDIT: https://forum.unity.com/threads/force-immediate-layout-update.372630/
 
 		public static void RefreshLayoutGroupsImmediateAndRecursive(GameObject root)
@@ -375,11 +357,11 @@ namespace Programming
 			}
 		}
 
-		public static Color GetTokenTypeColor(Token.TokenType type)
-		{
-			_instance._typeColours.TryGetValue(type, out var colour);
-			return colour;
-		}
+		// public static Color GetTokenTypeColor(Token.TokenType type)
+		// {
+		// 	_instance._typeColours.TryGetValue(type, out var colour);
+		// 	return colour;
+		// }
 	}
 
 	internal class SubjectNode : LeafNode

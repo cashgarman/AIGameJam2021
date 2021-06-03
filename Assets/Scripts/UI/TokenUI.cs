@@ -13,7 +13,7 @@ namespace UI
         public void Init(Token token)
         {
             _nameText.text = token.Word;
-            _background.color = Compiler.GetTokenTypeColor(token.Type);
+           // _background.color = Compiler.GetTokenTypeColor(token.Type);
         }
     }
 }

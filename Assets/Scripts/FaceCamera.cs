@@ -1,10 +1,8 @@
 using UnityEngine;
 
-[ExecuteInEditMode]
 public class FaceCamera : MonoBehaviour
 {
     public GameObject currentCam;
-
 
     void LateUpdate()
     {
@@ -14,10 +12,7 @@ public class FaceCamera : MonoBehaviour
         }
         else
         {
-            currentCam = GameObject.Find("Displays").GetComponent<CameraChangeController>().currentCam;
-            transform.forward = currentCam.transform.forward;
+            transform.forward = CameraChangeController.CurrentCamera.transform.forward;
         }
-        
-        
     }
 }
