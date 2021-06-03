@@ -290,7 +290,7 @@ namespace Programming
 			
 			// Look at the first token
 			var first = tokens.First();
-			var rest = tokens.Count() > 1 ? tokens.Skip(1) : null;
+			var rest = tokens.Length > 1 ? tokens.Skip(1) : null;
 			
 			switch(first.Type)
 			{
@@ -454,6 +454,11 @@ namespace Programming
 						// Get the target from the running program
 						subject = program.Target;
 					}
+					else if (subjectNode.Word == "home")
+					{
+						// Get the target from the running program
+						subject = (program.Computer as BaseAgent).Home;
+					}
 					else
 						subject = World.FindSubject(subjectNode, program);
 					break;
@@ -504,7 +509,7 @@ namespace Programming
 						"random" => World.GetRandomAgents(subjectNode.Word, program.Computer),
 						"nearest" => World.GetClosestAgents(subjectNode.Word, program.Computer),
 						// TODO: Add fullest and emptiest adjectives
-						_ => throw new Exception($"Unhandled adjective in qualifying node {_adjective.Word}")
+						_ => throw new Exception($"Unhandled adjective in adjective node {_adjective.Word}")
 					};
 					break;
 				case AdjectiveNode qualifierNode:
@@ -668,9 +673,13 @@ namespace Programming
 			// Get the actual subject
 			Subject = GetSubject(program);
 			
-			// Make sure an subject was found
+			// If no subject could be found
 			if (Subject == null)
-				throw new Exception("Couldn't find a subject to compare against");
+			{
+				// Debug.LogWarning("Couldn't find a subject to compare against");
+				// The comparison failed
+				return false;
+			}
 			
 			// Check if the matching subject matches the filter
 			var result = Subject.FilterBy(_filter.Word, program.Computer);

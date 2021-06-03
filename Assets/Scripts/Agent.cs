@@ -6,6 +6,7 @@ using Agents;
 using Programming;
 using Sirenix.OdinInspector;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class AgentInteraction
 {
@@ -34,6 +35,42 @@ public abstract class BaseAgent : SerializedMonoBehaviour
 	public abstract bool IsPluggedIn { get; set; }
 	public abstract BaseAgent PluggedIn { get; set; }
 	public bool IsCriminal { get; private set; }
+
+	// Animation
+	private Animator _animator;
+	
+	// Health
+	private float _health;
+	[SerializeField] private float _maxHealth;
+	[SerializeField] private float _healthOverride;
+	[SerializeField] private Slider _healthDisplay;
+	public bool IsKnockedOut { get; private set; }
+	public bool Disabled { get; set; }
+
+	public float Health
+	{
+		get => _health;
+		set
+		{
+			_health = Mathf.Clamp(value, 0f, _maxHealth);
+			if(_healthDisplay != null)
+				_healthDisplay.value = _health / _maxHealth;
+		}
+	}
+	
+	[SerializeField] private HomeAgent _home;
+	public HomeAgent Home => _home;
+
+	protected virtual void Awake()
+	{
+		_animator = GetComponent<Animator>();
+	}
+	
+	protected virtual void Start()
+	{
+		// Set the initial health
+		Health = _healthOverride > 0 ? _healthOverride : _maxHealth;
+	}
 	
 	public virtual float GetOrderBy(string sortType)
 	{
@@ -45,6 +82,8 @@ public abstract class BaseAgent : SerializedMonoBehaviour
 		return filter switch
 		{
 			"next" => !computer.HasInteractedWithRecently(this),
+			"alive" => !IsKnockedOut,
+			"dead" => IsKnockedOut,
 			_ => throw new Exception($"Invalid filter provided to {GetType().Name}: {filter}")
 		};
 	}
@@ -65,7 +104,7 @@ public abstract class BaseAgent : SerializedMonoBehaviour
 
 	public virtual void OnHeardShout(ShoutType shout, BaseAgent shouter)
 	{
-		Debug.Log($"{Name} heard shout {shout} from {shouter.Name}");
+		// Debug.Log($"{Name} heard shout {shout} from {shouter.Name}");
 	}
 
 	protected void Shout(ShoutType shout)
@@ -89,6 +128,24 @@ public abstract class BaseAgent : SerializedMonoBehaviour
 
 		// Agent is no longer a criminal
 		IsCriminal = false;
+	}
+
+	public void PlayAnimationTrigger(string triggerName)
+	{
+		Debug.Log($"Triggering animation trigger {triggerName} on {Name}");
+		_animator.SetTrigger(triggerName);
+	}
+
+	public void ApplyDamage(float amount)
+	{
+		Health -= amount;
+		
+		// Check if the agent is knocked out
+		if (Health <= 0f)
+		{
+			IsKnockedOut = true;
+			_animator.SetTrigger("Death");
+		}
 	}
 }
 
@@ -159,8 +216,8 @@ public abstract class Agent<AgentType> : BaseAgent where AgentType : BaseAgent
 			_recentlyInteractedAgents.Add(new AgentInteraction(agent));
 	}
 
-	protected bool InRange(BaseAgent target)
+	public bool InRange(BaseAgent target, float? rangeOverride = null)
 	{
-		return Vector3.Distance(transform.position, target.transform.position) <= _minInteractionDistance;
+		return Vector3.Distance(transform.position, target.transform.position) <= (rangeOverride ?? _minInteractionDistance);
 	}
 }

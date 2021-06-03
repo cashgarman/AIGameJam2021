@@ -23,6 +23,7 @@ public class CoinCollector : MonoBehaviour
 		botcoin.Collect(transform, () =>
 		{
 			++Game.Coins;
+			Destroy(botcoin.gameObject);
 		});
 	}
 }

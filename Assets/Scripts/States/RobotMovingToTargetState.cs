@@ -29,10 +29,7 @@ namespace States
 		{
 			// If the robot is holding the target it's trying to reach
 			if (_target == Agent.Holding)
-			{
-				Debug.Log($"reached");
 				return;
-			}
 			
 			// If the target has moved (and the path has already been calculated)
 			if (Vector3.Distance(_target.position, _prevTargetPosition) > Agent.ReachedDestinationThreshold && !Agent.NavAgent.pathPending)

@@ -10,7 +10,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.UI;
 
-public class Robot : Agent<Robot>, IComputer
+public class Robot : Agent<Robot>, IComputer, IPickup
 {
     public override string Name => name;
     public override Transform PluginSlot => _pluginSlot;
@@ -24,7 +24,23 @@ public class Robot : Agent<Robot>, IComputer
     public float BatteryLevel
     {
         get => _batteryLevel;
-        set => _batteryLevel = Mathf.Clamp(value, 0f, _maxBatteryLevel);
+        set
+        {
+            _batteryLevel = Mathf.Clamp(value, 0f, _maxBatteryLevel);
+            
+            // If the battery has run out
+            if (_batteryLevel <= 0f)
+            {
+                // Disable the robot
+                OnDisabled();
+            }
+            
+            // If the robot was disabled but now has power
+            if (Disabled && _batteryLevel > _minBatteryLevelToReenable)
+            {
+                OnEnabled();
+            }
+        }
     }
 
     public float _idleBatteryDrainPerSecond;
@@ -37,6 +53,7 @@ public class Robot : Agent<Robot>, IComputer
     public bool IsBatteryLow => _batteryLevel <= _batteryLowLevel;
     public float MinChargedBatteryLevel => _minChargedBatteryLevel;
     [SerializeField] private float _batteryLevelOverride;
+    [SerializeField] private float _minBatteryLevelToReenable;
 
     // UI
     [SerializeField] private Slider _energyDisplay;
@@ -46,9 +63,10 @@ public class Robot : Agent<Robot>, IComputer
     private NavMeshAgent _navAgent;
     [SerializeField] private float _reachedDestinationThreshold = 0.1f;
     public float ReachedDestinationThreshold => _reachedDestinationThreshold;
-    public bool HasReachedDestination => _navAgent.remainingDistance <= _navAgent.stoppingDistance;
+    public bool HasReachedDestination => _navAgent.remainingDistance <= ReachedDestinationThreshold;
     public NavMeshAgent NavAgent => _navAgent;
     public Program Program => _program;
+    public bool IsPickedUp { get; set; }
 
     // Inventory
     [SerializeField] private Transform _hands;
@@ -65,15 +83,27 @@ public class Robot : Agent<Robot>, IComputer
     private IHackable _hackingInProgress;
     private Coroutine _waitingToRetryCommand;
     public float HackingSpeed => _hackingSpeed;
+    
+    // Combat
+    [SerializeField] private float _attackCooldown;
+    public float AttackCooldown => _attackCooldown;
+    [SerializeField] private float _attackDamage;
+    public float AttackDamage => _attackDamage;
+    [SerializeField] private float _fightingRange;
+    public float FightingRange => _fightingRange;
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+        
         _navAgent = GetComponent<NavMeshAgent>();
         BatteryLevel = _batteryLevelOverride != 0 ? _batteryLevelOverride : _maxBatteryLevel;
     }
 
     void Start()
     {
+        base.Start();
+        
         if (_runCode)
         {
             _program = Compiler.Compile(code);
@@ -88,9 +118,24 @@ public class Robot : Agent<Robot>, IComputer
 
     protected override void Update()
     {
+        // Tick the base agent
         base.Update();
 
         UpdateUI();
+
+        // If there is a battery plugged into the robot
+        var battery = PluggedIn as Battery;
+        if (battery != null)
+        {
+            // Transfer some power from the battery to the robot
+            var potentialEnergyTransfer = _batteryChargeTransferPerSecond * Time.deltaTime;     // Maximum potential energy transfer
+            var energyToTransfer = Mathf.Min(battery.Charge, potentialEnergyTransfer);          // Make sure not to over-discharge the battery
+            energyToTransfer = Mathf.Min(energyToTransfer, _maxBatteryLevel - _batteryLevel);   // Make sure not to over-charge the robot
+            
+            // Transfer the energy
+            battery.Charge -= energyToTransfer;
+            BatteryLevel += energyToTransfer;
+        }
         
         // If the robot's program isn't currently interrupted
         if (_program is {Interrupted: false})
@@ -140,10 +185,10 @@ public class Robot : Agent<Robot>, IComputer
 
     private void HandleDebugControls()
     {
-        if (Input.GetKeyDown(KeyCode.Backspace))
-        {
-            BatteryLevel -= 10f;
-        }
+        // if (Input.GetKeyDown(KeyCode.Backspace))
+        // {
+        //     BatteryLevel -= 10f;
+        // }
     }
 
     private void UpdateUI()
@@ -164,7 +209,7 @@ public class Robot : Agent<Robot>, IComputer
         GotoState<RobotMovingToPositionState>(this, destination, onReached);
     }
 
-    public void MoveToObjectWithCallback(Transform target, Action onReached = null, Func<bool> abortProvider = null)
+    public void MoveToObjectWithCallback(Transform target, Action onReached, Func<bool> abortProvider = null)
     {
         InterruptProcesses();
        
@@ -196,6 +241,9 @@ public class Robot : Agent<Robot>, IComputer
     {
         if (Holding != null)
             throw new Exception($"Tried to pick up {pickup.name} while already holding {Holding.name}");
+        
+        if ((pickup as BaseAgent).IsPluggedIn)
+            throw new Exception($"Tried to pick up {pickup.name} while it was already plugged in");
 
         // Turn off the pickup's physics
         var rigidbody = pickup.gameObject.GetComponent<Rigidbody>();
@@ -207,7 +255,9 @@ public class Robot : Agent<Robot>, IComputer
         Holding = pickup;
         pickup.transform.SetParent(_hands);
         pickup.transform.localPosition = Vector3.zero;
+        pickup.transform.localRotation = Quaternion.identity;
         pickup.IsPickedUp = true;
+        pickup.OnPickedUp();
         
         // TODO: Wait for any animations and whatnot
         onComplete?.Invoke();
@@ -216,7 +266,11 @@ public class Robot : Agent<Robot>, IComputer
     public void Drop(IPickup pickup, Action onComplete = null)
     {
         if (Holding != pickup)
-            throw new Exception($"Tried to drop {pickup.name} that wasn't holding");
+        {
+            Debug.LogError($"Tried to drop {pickup.name} that wasn't holding");
+            onComplete?.Invoke();
+            return;
+        }
 
         // Turn on the pickup's physics
         var rigidbody = pickup.gameObject.GetComponent<Rigidbody>();
@@ -239,6 +293,10 @@ public class Robot : Agent<Robot>, IComputer
         if (Holding != subjectA)
             throw new Exception($"Tried to plug in something {name} wasn't holding");
         
+        // Subject B shouldn't already have something plugged in
+        if (subjectB.PluggedIn != null)
+            throw new Exception($"Tried to plug in something {subjectA.Name} into something that already had something plugged in");
+        
         // Turn off subject A's physics
         var rigidbody = subjectA.gameObject.GetComponent<Rigidbody>();
         rigidbody.useGravity = false;
@@ -249,6 +307,7 @@ public class Robot : Agent<Robot>, IComputer
         Holding = null;
         subjectA.transform.SetParent(subjectB.PluginSlot != null ? subjectB.PluginSlot : subjectB.transform);
         subjectA.transform.localPosition = Vector3.zero;
+        subjectA.transform.localRotation = Quaternion.identity;
         subjectA.IsPluggedIn = true;
         subjectB.OnObjectPluggedIn(subjectA);
         
@@ -270,6 +329,7 @@ public class Robot : Agent<Robot>, IComputer
         // Unplug the subject from the robot
         Debug.Log($"{name} is unplugging {subject} from themselves");
         subject.IsPluggedIn = false;
+        PluggedIn = null;
         subject.transform.SetParent(null);
         subject.OnObjectUnplugged(subject);
         
@@ -277,18 +337,18 @@ public class Robot : Agent<Robot>, IComputer
         onComplete?.Invoke();
     }
 
-    public override void OnObjectPluggedIn(BaseAgent pluggedIn)
-    {
-        base.OnObjectPluggedIn(pluggedIn);
-        
-        // If the object is a battery
-        var battery = pluggedIn as Battery;
-        if (battery != null)
-        {
-            // Start charging from the battery
-            GotoState<RobotChargingState>(this, battery);
-        }
-    }
+    // public override void OnObjectPluggedIn(BaseAgent pluggedIn)
+    // {
+    //     base.OnObjectPluggedIn(pluggedIn);
+    //     
+    //     // If the object is a battery
+    //     var battery = pluggedIn as Battery;
+    //     if (battery != null)
+    //     {
+    //         // Start charging from the battery
+    //         GotoState<RobotChargingState>(this, battery);
+    //     }
+    // }
 
     public void ExecuteCommand(string command, params object[] arguments)
     {
@@ -297,19 +357,21 @@ public class Robot : Agent<Robot>, IComputer
         switch (command)
         {
             case "goto":
-                var agent = arguments[0] as BaseAgent;
+                var moveTarget = arguments[0] as BaseAgent;
                 
                 // If a valid agent couldn't be found (there might not be one available right now)
-                if (agent == null)
+                if (moveTarget == null)
                 {
                     // Try the command again a bit
                     RetryLineOfCodeAfterDelay();
                     return;
                 }
                 
-                MoveToObjectWithCallback(agent.transform, () =>
+                MoveToObjectWithCallback(moveTarget.transform, () =>
                 {
-                    AddAgentInteraction(agent);
+                    Debug.Log($"{Name} reached move target {moveTarget.Name}");
+                    
+                    AddAgentInteraction(moveTarget);
                     
                     // Run the next line of code
                     _program.GotoNextLine();
@@ -506,9 +568,46 @@ public class Robot : Agent<Robot>, IComputer
                 
                 break;
             
+            case "fight":
+                var target = arguments[0] as BaseAgent;
+                
+                // If a valid agent couldn't be found (there might not be one available right now)
+                if (target == null)
+                {
+                    // Try the command again a bit
+                    RetryLineOfCodeAfterDelay();
+                    return;
+                }
+                
+                void FightTheTarget()
+                {
+                    FightTarget(target, () =>
+                    {
+                        // TODO: Are these necessary, will they cause problems?
+                        AddAgentInteraction(target);
+                        
+                        // Run the next line of code
+                        _program.GotoNextLine();
+                        _program.RunCurrentLine(this);
+                    });
+                }
+                
+                // If either subject is far away
+                if (!InRange(target, FightingRange))
+                    MoveToObjectWithCallback(target.transform, FightTheTarget);
+                else
+                    FightTheTarget();
+                
+                break;
+            
             default:
                 throw new Exception($"{name} tried to run unknown command '{command}'");
         }
+    }
+
+    private void FightTarget(BaseAgent target, Action callback)
+    {
+        GotoState<RobotFightingState>(this, target, callback);
     }
 
     private void RetryLineOfCodeAfterDelay()
@@ -565,7 +664,36 @@ public class Robot : Agent<Robot>, IComputer
             "empty" => _batteryLevel <= _batteryLowLevel, // TODO: Should this be zero, or close enough
             "full" => _batteryLevel >= _batteryHighLevel, // TODO: Should this be zero, or close enough
             "criminal" => IsCriminal,
+            "disabled" => Disabled,
+            "enabled" => !Disabled,
+            "pluggedin" => PluggedIn != null,
+            "unplugged" => PluggedIn == null,
             _ => base.FilterBy(filter, computer)
         };
+    }
+    
+    public void OnPickedUp()
+    {
+        // Disable the nav mesh agent
+        _navAgent.enabled = false;
+    }
+    
+    private void OnDisabled()
+    {
+        Debug.Log($"{Name} was disabled from lack of power");
+        
+        Idle();
+        Disabled = true;
+        _navAgent.isStopped = true;
+        Program.Pause();
+    }
+    
+    private void OnEnabled()
+    {
+        Debug.Log($"{Name} was re-enabled after being recharged");
+
+        Disabled = false;
+        _navAgent.isStopped = false;
+        Program.Resume(this);
     }
 }

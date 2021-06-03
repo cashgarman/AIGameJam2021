@@ -27,6 +27,7 @@ public class Botcoin : SerializedMonoBehaviour
 
 	public void Collect(Transform collector, Action callback)
 	{
+		// TODO: This happens sometimes after a coin has already been collected
 		transform.DOMove(collector.position, _collectAnimationDuration).OnComplete(() => callback());
 	}
 }

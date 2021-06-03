@@ -6,4 +6,5 @@ public interface IPickup
 	Transform transform { get; }	// HACK: Is this too hacky a way to handle getting at the transform?
 	GameObject gameObject { get; }
 	string name { get; }
+	void OnPickedUp();
 }

@@ -27,7 +27,7 @@ namespace States
 			Agent.Charge += _charger.ChargePerSecond * Time.deltaTime;
 			
 			// If the battery is full
-			if (Agent.IfFull)
+			if (Agent.IsFull)
 			{
 				// Flag the battery as not charging
 				Agent.IsCharging = false;

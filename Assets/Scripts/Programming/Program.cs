@@ -150,7 +150,7 @@ namespace Programming
 			// If the current section of code has finished
 			if (_currentLine == CurrentLines.Count)
 			{
-				Debug.Log($"Program section finished");
+				Debug.Log($"{Computer.name}'s program section finished");
 
 				// If the current section is an if statement
 				if (_currentSection.Type == CodeSection.BlockType.Conditional)

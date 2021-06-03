@@ -19,14 +19,9 @@ public class Battery : Agent<Battery>, IPickup
     [SerializeField] private Slider _chargeDisplay;
 
     private float _charge;
-    [SerializeField] public float _energyPerCharge;
-    [SerializeField] private float _lowChargeLevel;
+    [SerializeField] private float _lowChargePercent;
+    [SerializeField] private float _highChargePercent;
     [SerializeField] private float _chargeOverride;
-    [SerializeField] private TMP_Text _nameText;
-    [SerializeField] private float _chargeLowThreshold;
-    [SerializeField] private float _chargeHighThreshold;
-
-    public bool IfFull => _charge == _maxCharge;
 
     public float Charge
     {
@@ -37,8 +32,11 @@ public class Battery : Agent<Battery>, IPickup
             _chargeDisplay.value = _charge / _maxCharge;
         }
     }
-
-    public bool IsLow => _charge < _lowChargeLevel;
+    
+    public bool IsFull => _charge == _maxCharge;
+    public bool IsEmpty => _charge == 0f;
+    public bool IsLow => _charge / _maxCharge < _lowChargePercent;
+    public bool IsHigh => _charge / _maxCharge > _highChargePercent;
     public bool IsCharging { get; set; }
 
     void Awake()
@@ -55,8 +53,6 @@ public class Battery : Agent<Battery>, IPickup
     {
         base.Update();
 
-        UpdateUI();
-        
         HandleDebugControls();
     }
 
@@ -68,16 +64,10 @@ public class Battery : Agent<Battery>, IPickup
         }
     }
 
-    private void UpdateUI()
-    {
-        // Update the battery's name and state
-        _nameText.text = $"{Name}\n<size=50%>{_currentState.Name}</size>";
-    }
-
     public void OnNearbyCharger(Charger charger)
     {
         // If the battery isn't full
-        if (!IfFull)
+        if (!IsFull)
         {
             GotoState<BatteryChargingState>(this, charger);
         }
@@ -96,10 +86,15 @@ public class Battery : Agent<Battery>, IPickup
     {
         return filter switch
         {
-            "empty" => _charge <= _chargeLowThreshold, // TODO: Should this be zero, or close enough
-            "full" => _charge >= _chargeHighThreshold, // TODO: Should this be zero, or close enough
+            "empty" => IsLow, // TODO: Should this be zero, or close enough
+            "full" => IsHigh, // TODO: Should this be zero, or close enough
             "unplugged" => !IsPluggedIn,
+            "pluggedin" => IsPluggedIn,
             _ => base.FilterBy(filter, computer)
         };
+    }
+    
+    public void OnPickedUp()
+    {
     }
 }

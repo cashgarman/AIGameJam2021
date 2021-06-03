@@ -19,6 +19,8 @@ namespace UI
 
 		public static void OnAgentSelected(AgentUI agentUI)
 		{
+			return;
+			
 			if(_instance._selectedAgentUI != agentUI)
 				_instance._selectedAgentUI?.OnUnselected();
 			

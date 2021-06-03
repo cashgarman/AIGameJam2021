@@ -21,9 +21,9 @@ namespace States
 			base.OnTick();
 
 			// Transfer some power from the battery to the robot
-			var chargeToTransfer = Mathf.Min(_battery.Charge, Agent._batteryChargeTransferPerSecond * Time.deltaTime);
-			_battery.Charge -= chargeToTransfer;
-			Agent.BatteryLevel += chargeToTransfer * _battery._energyPerCharge;
+			// var chargeToTransfer = Mathf.Min(_battery.Charge, Agent._batteryChargeTransferPerSecond * Time.deltaTime);
+			// _battery.Charge -= chargeToTransfer;
+			// Agent.BatteryLevel += chargeToTransfer * _battery._energyPerCharge;
 			
 			// TODO: Move all the battery related stuff into a BatteryDrainingState
 			

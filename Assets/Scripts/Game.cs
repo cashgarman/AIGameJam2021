@@ -13,7 +13,16 @@ public class Game : SerializedMonoBehaviour
 	[SerializeField] private int _startingCoins;
 	[SerializeField] private TMP_Text _coinText;
 
-	public static Robot ControlledRobot { get; set; }
+	private static Robot _controlledRobot;
+	public static Robot ControlledRobot
+	{
+		get => _controlledRobot;
+		set
+		{
+			_controlledRobot = value;
+			FindObjectOfType<CameraController>().Target = value;
+		}
+	}
 	public static int Coins { get; set; }
 
 	private void Awake()
@@ -30,7 +39,7 @@ public class Game : SerializedMonoBehaviour
 
 	private void Update()
 	{
-		if (_mouseMovementEnabled && Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+		if (!ControlledRobot.IsKnockedOut && _mouseMovementEnabled && Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
 		{
 			// CREDIT: https://answers.unity.com/questions/1386777/get-origin-of-plane-in-world-coordinates.html
 			if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out var hit))
