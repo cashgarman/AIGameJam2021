@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public class CameraChangeController : MonoBehaviour
 {
-    GameObject currentCam;
+    public GameObject currentCam;
     GameObject newCam;
     GameObject staticCam;
     string startCam = "WRHS_Cam1";
