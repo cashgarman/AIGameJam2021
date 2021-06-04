@@ -706,11 +706,14 @@ public class Robot : Agent<Robot>, IComputer, IPickup
         callback();
     }
 
-    public override void OnClicked()
+    protected override void OnDoubleClick()
     {
-        Debug.Log($"{name} was clicked");
+        base.OnDoubleClick();
+        
+        Game.PossessRobot(this);
     }
-    
+
+
     public override float GetOrderBy(string sortType)
     {
         return sortType switch

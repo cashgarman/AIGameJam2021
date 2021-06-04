@@ -85,7 +85,7 @@ public class Game : SerializedMonoBehaviour
 		UpdateUI();
 	}
 
-	private static void PossessRobot(Robot robot)
+	public static void PossessRobot(Robot robot)
 	{
 		ControlledRobot = robot;
 		ProgrammingUI.Show(robot, true);

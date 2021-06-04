@@ -60,6 +60,8 @@ public abstract class BaseAgent : SerializedMonoBehaviour
 	
 	[SerializeField] private HomeAgent _home;
 	private Coroutine _criminalCoroutine;
+	private float _timeOfLastClick;
+	[SerializeField] private float _doubleClickTime = 0.5f;
 	public HomeAgent Home => _home;
 
 	protected virtual void Awake()
@@ -91,6 +93,15 @@ public abstract class BaseAgent : SerializedMonoBehaviour
 
 	public virtual void OnClicked()
 	{
+		if (_timeOfLastClick < _doubleClickTime)
+			OnDoubleClick();
+
+		_timeOfLastClick = Time.time;
+	}
+
+	protected virtual void OnDoubleClick()
+	{
+		Debug.Log($"Double clicked {name}");
 	}
 
 	public virtual void OnObjectPluggedIn(BaseAgent subject)
