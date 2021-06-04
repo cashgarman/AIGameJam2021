@@ -7,7 +7,7 @@ namespace Agents
 		public override string Name => "Home";
 		
 		public override Transform PluginSlot { get; }
-		public override bool IsPluggedIn { get; set; }
-		public override BaseAgent PluggedIn { get; set; }
+		public override BaseAgent PluggedInto { get; set; }
+		public override float AlreadyVisitedCooldownMultiplier => 1f;
 	}
 }

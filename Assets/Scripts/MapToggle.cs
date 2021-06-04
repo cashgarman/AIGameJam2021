@@ -19,7 +19,5 @@ public class MapToggle : MonoBehaviour
             map.SetActive(true);
             mapBool = true;
         }
-
-
     }
 }

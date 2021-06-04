@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Sirenix.OdinInspector;
 using TMPro;
 using UnityEngine;
@@ -14,7 +15,7 @@ public class Game : SerializedMonoBehaviour
 	[SerializeField] private TMP_Text _coinText;
 
 	private static Robot _controlledRobot;
-	private Robot[] _allRobots;
+	private Robot[] _allPlayerRobots;
 	private int _currentRobotIndex;
 
 	public static Robot ControlledRobot
@@ -39,12 +40,15 @@ public class Game : SerializedMonoBehaviour
 		Coins = _startingCoins;
 		UpdateUI();
 		
-		_allRobots = FindObjectsOfType<Robot>();
-		_currentRobotIndex = _allRobots.IndexOf(r => r == ControlledRobot);
+		_allPlayerRobots = FindObjectsOfType<Robot>().Where(r => r.Team == Robot.RobotTeam.Player).ToArray();
+		_currentRobotIndex = _allPlayerRobots.IndexOf(r => r == ControlledRobot);
 	}
 
 	private void Update()
 	{
+		// Update the list of player robots in case they acquired a new one
+		_allPlayerRobots = FindObjectsOfType<Robot>().Where(r => r.Team == Robot.RobotTeam.Player).ToArray();
+
 		Time.timeScale = Input.GetKey(KeyCode.LeftShift) ? 20f : 1f;
 
 		if (!ControlledRobot.IsKnockedOut && !ControlledRobot.IsRunningProgram && _mouseMovementEnabled && Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
@@ -67,10 +71,10 @@ public class Game : SerializedMonoBehaviour
 		if (Input.GetKeyDown(KeyCode.Tab))
 		{
 			++_currentRobotIndex;
-			if (_currentRobotIndex == _allRobots.Length)
+			if (_currentRobotIndex == _allPlayerRobots.Length)
 				_currentRobotIndex = 0;
 
-			PossessRobot(_allRobots[_currentRobotIndex]);
+			PossessRobot(_allPlayerRobots[_currentRobotIndex]);
 		}
 
 		if (Input.GetKeyDown(KeyCode.F1))
@@ -84,6 +88,7 @@ public class Game : SerializedMonoBehaviour
 	private static void PossessRobot(Robot robot)
 	{
 		ControlledRobot = robot;
+		ProgrammingUI.Show(robot, true);
 	}
 
 	public void ToggleCurrentRobotProgramRunning()
@@ -103,5 +108,32 @@ public class Game : SerializedMonoBehaviour
 	{
 		// Resume the controlled robot's program
 		ControlledRobot.Program.Resume(ControlledRobot);
+	}
+	
+	private void OnGUI()
+	{
+		return;
+		
+		var allRobots = FindObjectsOfType<Robot>();
+
+		var numPolice = allRobots.Where(r => r.Name.ToLower().Contains("police"));
+		var numPedestrians = allRobots.Where(r => r.Name.ToLower().Contains("pedestrian"));
+		var numOurs = allRobots.Where(r => r.Name.ToLower().Contains("crime"));
+
+		var style = new GUIStyle(GUI.skin.label)
+		{
+			fontSize = 24
+		};
+        
+		GUILayout.Label($"Robots: {allRobots.Length}", style);
+		GUILayout.Label($"Police: {numPolice.Count()}", style);
+		GUILayout.Label($"Pedestrians: {numPedestrians.Count()}", style);
+		GUILayout.Label($"Ours: {numOurs.Count()}", style);
+	}
+
+	public static void OnAgentSelected(BaseAgent agent)
+	{
+		if(agent is Robot robot)
+			ProgrammingUI.Show(robot);
 	}
 }

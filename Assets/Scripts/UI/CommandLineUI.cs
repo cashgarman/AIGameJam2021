@@ -4,6 +4,8 @@ using System.Linq;
 using Programming;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using Object = UnityEngine.Object;
 
 namespace UI
 {
@@ -12,6 +14,7 @@ namespace UI
         [SerializeField] private GameObject _commandLineContainer;
         [SerializeField] private TMP_InputField _commandLineInput;
         [SerializeField] private CommandLineErrorUI _errorDisplay;
+        [SerializeField] private GameObject _codeInput;
 
         private bool _visible;
         private List<string> _commandHistory = new List<string>();
@@ -21,16 +24,20 @@ namespace UI
         {
             if (Input.GetKeyDown(KeyCode.Return))
             {
-                if (!_visible)
+                // Prevent changing focus when editing code
+                if (EventSystem.current.currentSelectedGameObject != _codeInput)
                 {
-                    _commandLineContainer.SetActive(true);
-                    _commandLineInput.ActivateInputField();
-                    _visible = true;
-                }
-                else
-                {
-                    _commandLineInput.ActivateInputField();
-                    RunCommand();
+                    if (!_visible)
+                    {
+                        _commandLineContainer.SetActive(true);
+                        _commandLineInput.ActivateInputField();
+                        _visible = true;
+                    }
+                    else
+                    {
+                        _commandLineInput.ActivateInputField();
+                        RunCommand();
+                    }
                 }
             }
 

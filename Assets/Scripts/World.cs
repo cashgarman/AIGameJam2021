@@ -16,6 +16,8 @@ public class World : MonoBehaviour
 			"robot" => typeof(Robot),
 			"parkingmeter" => typeof(ParkingMeter),
 			"waypoint" => typeof(Waypoint),
+			"vehicle" => typeof(Vehicle),
+			"botcoinminer" => typeof(BotcoinMiner),
 			_ => throw new Exception($"Tried to get type from unknown name {type}")
 		};
 	}
@@ -33,7 +35,7 @@ public class World : MonoBehaviour
 	public static BaseAgent GetClosestAgent(string type, IComputer computer, string filter = null, bool includeSelf = false)
 	{
 		return FindObjectsOfType(GetTypeFromName(type, computer)).Select(a => a as BaseAgent)
-			.Where(a => (a != computer || includeSelf) && a != (computer as BaseAgent).PluggedIn)
+			.Where(a => (a != computer || includeSelf) && a != (computer as BaseAgent).PluggedInto)
 			.OrderBy(a => Vector3.Distance(a.transform.position, computer.transform.position))
 			.FirstOrDefault();
 	}
@@ -56,7 +58,7 @@ public class World : MonoBehaviour
 	public static IEnumerable<BaseAgent> GetClosestAgents(string type, IComputer computer, string filter = null, bool includeSelf = false)
 	{
 		return FindObjectsOfType(GetTypeFromName(type, computer)).Select(a => a as BaseAgent)
-			.Where(a => (a != computer || includeSelf) && a != (computer as BaseAgent).PluggedIn)
+			.Where(a => (a != computer || includeSelf) && a != (computer as BaseAgent).PluggedInto)
 			.Where(a => filter == null || a.FilterBy(filter, computer))
 			.OrderBy(a => Vector3.Distance(a.transform.position, computer.transform.position));
 	}
@@ -72,6 +74,9 @@ public class World : MonoBehaviour
 		{
 			case SubjectNode subjectNode:
 				return GetClosestAgent(subjectNode.Word, program.Computer);
+			case AdjectiveNode qualifierNode:
+				qualifierNode.Run(program);
+				return qualifierNode.Subjects.FirstOrDefault();
 			case FilterNode predicateNode:
 				predicateNode.Run(program);
 				return predicateNode.Subjects.FirstOrDefault();

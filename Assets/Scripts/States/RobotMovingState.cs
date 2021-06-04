@@ -15,7 +15,6 @@ namespace States
 			// Wait until the path to the destination has been calculated
 			if (Agent.NavAgent.pathPending)
 			{
-				Debug.Log($"Path calculation still pending");
 				return;
 			}
 			
@@ -27,11 +26,10 @@ namespace States
 			{
 				Debug.Log($"Aborting moving");
 				
-				// // Stop moving
-				Agent.Stop();
+				// Stop the robot
+				Agent.StopRobot();
 				
 				// Abort moving and return to idle
-				Agent.Idle();
 			}
 			
 			// If the robot has reached the destination
@@ -39,11 +37,8 @@ namespace States
 			{
 				Debug.Log($"{Agent.Name} arrived at destination");
 				
-				// Stop moving
-				Agent.Stop();
-				
-				// Just go back to idle
-				Agent.Idle();
+				// Stop the robot
+				Agent.StopRobot();
 				
 				// Call any onReached callback
 				_onReached?.Invoke();

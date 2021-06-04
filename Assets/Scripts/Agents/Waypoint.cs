@@ -19,8 +19,8 @@ namespace Agents
 		[SerializeField] private ProgressUI _progress;
 
 		public override Transform PluginSlot { get; }
-		public override bool IsPluggedIn { get; set; }
-		public override BaseAgent PluggedIn { get; set; }
+		public override BaseAgent PluggedInto { get; set; }
+		public override float AlreadyVisitedCooldownMultiplier => 10f;
 
 		private Coroutine _hackingCoroutine;
 		[SerializeField] private WaypointType _waypointType;
@@ -60,7 +60,7 @@ namespace Agents
 			{
 				"police" => _waypointType == WaypointType.Police,
 				"pedestrian" => _waypointType == WaypointType.Pedestrian,
-				"my" => _waypointType == WaypointType.Player,
+				"player" => _waypointType == WaypointType.Player,
 				_ => base.FilterBy(filter, computer)
 			};
 		}

@@ -19,6 +19,7 @@ namespace UI
 
 		public static void OnAgentSelected(AgentUI agentUI)
 		{
+			Game.OnAgentSelected(agentUI.Agent);
 			return;
 			
 			if(_instance._selectedAgentUI != agentUI)

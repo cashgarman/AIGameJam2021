@@ -56,6 +56,14 @@ PrefabInstance:
       value: PoliceBot Variant
       objectReference: {fileID: 0}
     - target: {fileID: 5707180387219456398, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: _team
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5707180387219456398, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: _batteryLevelOverride
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5707180387219456398, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
       propertyPath: serializationData.Prefab
       value: 
       objectReference: {fileID: 5707180387219456398, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}

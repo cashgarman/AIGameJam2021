@@ -1,12 +1,12 @@
 using States;
 using UnityEngine;
 
-public class Charger : Agent<Charger>
+public class Charger : Agent<Charger>, ICharger
 {
     public override string Name => "Charger";
     public override Transform PluginSlot => _pluginSlot;    // TODO: Add multiple plugin slots
-    public override bool IsPluggedIn { get; set; }
-    public override BaseAgent PluggedIn { get; set; }
+    public override BaseAgent PluggedInto { get; set; }
+    public override float AlreadyVisitedCooldownMultiplier => 1f;
 
     [SerializeField] private float _chargePerSecond;
     [SerializeField] private Transform _pluginSlot;
@@ -24,7 +24,7 @@ public class Charger : Agent<Charger>
         if (battery != null)
         {
             // Let the battery know it's near a charger
-            battery.OnNearbyCharger(this);
+            battery.StartCharging(this);
         }
     }
 }

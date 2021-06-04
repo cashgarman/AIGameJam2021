@@ -88,11 +88,11 @@ namespace Programming
 
 		public static Program Compile(string code)
 		{
-			var program = new Program();
+			var program = new Program(code);
 			
 			// Handle empty programs
 			if (string.IsNullOrEmpty(code))
-				return new Program();
+				return new Program("");
 			
 			// Tokenize the whole program
 			var tokens = _instance.Tokenize(code);

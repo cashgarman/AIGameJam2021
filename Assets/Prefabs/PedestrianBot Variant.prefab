@@ -69,13 +69,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5707180387219456398, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
       propertyPath: code
-      value: 'goto random pedestrian waypoint
-
-'
+      value: goto random pedestrian waypoint
       objectReference: {fileID: 0}
     - target: {fileID: 5707180387219456398, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
       propertyPath: _home
       value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 5707180387219456398, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
+      propertyPath: _team
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 5707180387219456398, guid: 974cdf02ff9b80d4a94ca2b430f4892c, type: 3}
       propertyPath: _runCode

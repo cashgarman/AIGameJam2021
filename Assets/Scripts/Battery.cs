@@ -10,8 +10,8 @@ public class Battery : Agent<Battery>, IPickup
 {
     public override string Name => "Battery";
     public override Transform PluginSlot => null;
-    public override bool IsPluggedIn { get; set; }
-    public override BaseAgent PluggedIn { get; set; }
+    public override BaseAgent PluggedInto { get; set; }
+    public override float AlreadyVisitedCooldownMultiplier => 1f;
 
     public bool IsPickedUp { get; set; }
 
@@ -64,7 +64,7 @@ public class Battery : Agent<Battery>, IPickup
         }
     }
 
-    public void OnNearbyCharger(Charger charger)
+    public void StartCharging(ICharger charger)
     {
         // If the battery isn't full
         if (!IsFull)
@@ -88,8 +88,9 @@ public class Battery : Agent<Battery>, IPickup
         {
             "empty" => IsLow, // TODO: Should this be zero, or close enough
             "full" => IsHigh, // TODO: Should this be zero, or close enough
-            "unplugged" => !IsPluggedIn,
-            "pluggedin" => IsPluggedIn,
+            "unplugged" => PluggedInto == null,
+            "pluggedin" => PluggedInto != null,
+            "held" => IsPickedUp,
             _ => base.FilterBy(filter, computer)
         };
     }

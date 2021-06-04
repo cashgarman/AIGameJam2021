@@ -6,14 +6,14 @@ namespace States
 	{
 		public override string Name => "Charging";
 
-		private Charger _charger;
+		private ICharger _charger;
 
 		public override void OnEntered(params object[] args)
 		{
 			base.OnEntered(args);
 			
 			// Unpack arguments
-			_charger = (Charger) args[0];
+			_charger = (ICharger) args[0];
 			
 			// Flag the battery as charging
 			Agent.IsCharging = true;

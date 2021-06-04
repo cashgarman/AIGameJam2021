@@ -99,6 +99,7 @@ namespace Programming
 		private CodeSection _currentSection;
 		private int _interruptedLine;
 		private CodeSection _interruptedSection;
+		public CodeSection MainSection => Sections.FirstOrDefault(s => s.Type == CodeSection.BlockType.Main);
 
 		public List<CodeLine> CurrentLines => _currentSection.Lines;
 		public CodeLine CurrentLine => _currentSection?.Lines[_currentLine];
@@ -108,9 +109,11 @@ namespace Programming
 		public IComputer Computer { get; private set; }
 		public BaseAgent Notifier { get; set; }
 		public BaseAgent Target { get; set; }
+		public string Code { get; set; }
 
-		public Program()
+		public Program(string code)
 		{
+			Code = code;
 		}
 
 		// public void AddLine(string code, BranchNode rootNode)
@@ -218,7 +221,7 @@ namespace Programming
 				return;
 			
 			// Return to the last line and section of code in the main code section
-			_currentSection = _interruptedSection;
+			_currentSection = _interruptedSection ?? MainSection;
 			_currentLine = _interruptedLine;
 			Interrupted = false;
 			RunCurrentLine(computer);

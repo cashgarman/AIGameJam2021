@@ -1104,7 +1104,7 @@ GameObject:
   - component: {fileID: 5987288139511463905}
   - component: {fileID: 5987288139511463904}
   m_Layer: 0
-  m_Name: PoliceBot Variant 1
+  m_Name: PoliceBotHat
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1241,9 +1241,10 @@ MonoBehaviour:
   _home: {fileID: 0}
   _agentInteractionCooldown: 4
   _minInteractionDistance: 5
+  _team: 1
   _maxBatteryLevel: 100
   _idleBatteryDrainPerSecond: 0
-  _movingBatteryDrainPerSecond: 1
+  _movingBatteryDrainPerSecond: 0
   _batteryLowLevel: 25
   _batteryHighLevel: 75
   _minChargedBatteryLevel: 50

@@ -3,7 +3,6 @@ using System.Collections;
 using TMPro;
 using UI;
 using UnityEngine;
-using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
 namespace Agents
@@ -17,8 +16,8 @@ namespace Agents
 		[SerializeField] private int _startingCoins;
 
 		public override Transform PluginSlot { get; }
-		public override bool IsPluggedIn { get; set; }
-		public override BaseAgent PluggedIn { get; set; }
+		public override BaseAgent PluggedInto { get; set; }
+		public override float AlreadyVisitedCooldownMultiplier => 10f;
 
 		private Coroutine _hackingCoroutine;
 		private int _coinsCollected;

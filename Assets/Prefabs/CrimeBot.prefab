@@ -204,6 +204,7 @@ RectTransform:
   - {fileID: 6649514151499703043}
   - {fileID: 4984367476566266886}
   - {fileID: 3165591009440162181}
+  - {fileID: 662284031386557752}
   m_Father: {fileID: 3174092951808964369}
   m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
@@ -1178,15 +1179,16 @@ MonoBehaviour:
   _healthDisplay: {fileID: 1992560815592619699}
   _home: {fileID: 0}
   _agentInteractionCooldown: 4
-  _minInteractionDistance: 5
+  _minInteractionDistance: 2
+  _team: 0
   _maxBatteryLevel: 100
   _idleBatteryDrainPerSecond: 0
-  _movingBatteryDrainPerSecond: 1
+  _movingBatteryDrainPerSecond: 0
   _batteryLowLevel: 25
   _batteryHighLevel: 75
   _minChargedBatteryLevel: 50
   _batteryChargeTransferPerSecond: 5
-  _batteryLevelOverride: 30
+  _batteryLevelOverride: 0
   _minBatteryLevelToReenable: 10
   _energyDisplay: {fileID: 4928736233745307228}
   _nameText: {fileID: 6628534719626480391}
@@ -1201,6 +1203,9 @@ MonoBehaviour:
   _attackCooldown: 2
   _attackDamage: 10
   _fightingRange: 1.5
+  _nameOverride: 
+  _minIdleTime: 10
+  _maxIdleTime: 90
 --- !u!114 &6907821184083729390
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2051,6 +2056,116 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _target: {fileID: 5707180387219456398}
   _propertyName: IsBatteryEmpty
+--- !u!1 &7586772673571509644
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 662284031386557752}
+  - component: {fileID: 7733824684890249920}
+  - component: {fileID: 4938111496459135947}
+  - component: {fileID: 7828231589238038953}
+  - component: {fileID: 7055212989802725200}
+  m_Layer: 0
+  m_Name: EditingCodeIcon
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &662284031386557752
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7586772673571509644}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_Children: []
+  m_Father: {fileID: 8305594054340089613}
+  m_RootOrder: 3
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: -5.7}
+  m_SizeDelta: {x: 160, y: 30}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &7733824684890249920
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7586772673571509644}
+  m_CullTransparentMesh: 1
+--- !u!114 &4938111496459135947
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7586772673571509644}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.8679245, g: 0.8679245, b: 0.8679245, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FontData:
+    m_Font: {fileID: 12800000, guid: 8d5447b0a77949445a4fccd1aa4b5844, type: 3}
+    m_FontSize: 25
+    m_FontStyle: 0
+    m_BestFit: 0
+    m_MinSize: 10
+    m_MaxSize: 48
+    m_Alignment: 4
+    m_AlignByGeometry: 0
+    m_RichText: 1
+    m_HorizontalOverflow: 0
+    m_VerticalOverflow: 0
+    m_LineSpacing: 1
+  m_Text: "\uEBA5"
+--- !u!114 &7828231589238038953
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7586772673571509644}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfabb0440166ab443bba8876756fdfa9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_EffectColor: {r: 0, g: 0, b: 0, a: 1}
+  m_EffectDistance: {x: 0.5, y: -0.5}
+  m_UseGraphicAlpha: 1
+--- !u!114 &7055212989802725200
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7586772673571509644}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7f0743e539980447854471e9fb5a5ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _target: {fileID: 5707180387219456398}
+  _propertyName: IsEditingCode
 --- !u!1 &8114258779513569690
 GameObject:
   m_ObjectHideFlags: 0

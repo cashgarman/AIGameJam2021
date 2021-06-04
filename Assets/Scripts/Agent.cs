@@ -11,12 +11,12 @@ using UnityEngine.UI;
 public class AgentInteraction
 {
 	public BaseAgent Agent { get; }
-	public float TimeInteractedWith { get; set; }
+	public float NextInteractionCooldown { get; set; }
 
-	public AgentInteraction(BaseAgent agent)
+	public AgentInteraction(BaseAgent agent, float cooldown)
 	{
 		Agent = agent;
-		TimeInteractedWith = Time.time;
+		NextInteractionCooldown = cooldown;
 	}
 }
 
@@ -32,9 +32,9 @@ public abstract class BaseAgent : SerializedMonoBehaviour
 	
 	public abstract Transform PluginSlot { get; }
 	public abstract string Name { get; }
-	public abstract bool IsPluggedIn { get; set; }
-	public abstract BaseAgent PluggedIn { get; set; }
+	public abstract BaseAgent PluggedInto { get; set; }
 	public bool IsCriminal { get; private set; }
+	public abstract float AlreadyVisitedCooldownMultiplier { get; }
 
 	// Animation
 	private Animator _animator;
@@ -59,6 +59,7 @@ public abstract class BaseAgent : SerializedMonoBehaviour
 	}
 	
 	[SerializeField] private HomeAgent _home;
+	private Coroutine _criminalCoroutine;
 	public HomeAgent Home => _home;
 
 	protected virtual void Awake()
@@ -94,12 +95,32 @@ public abstract class BaseAgent : SerializedMonoBehaviour
 
 	public virtual void OnObjectPluggedIn(BaseAgent subject)
 	{
-		PluggedIn = subject;
+		PluggedInto = subject;
 	}
 
 	public virtual void OnObjectUnplugged(BaseAgent subject)
 	{
-		PluggedIn = null;
+		PluggedInto = null;
+	}
+	
+	public void UnplugFromSelf(BaseAgent subject, Action onComplete = null)
+	{
+		// The subject should be plugged into the agent already
+		if (PluggedInto != subject)
+			throw new Exception($"Tried to unplug {subject} that wasn't plugged into {Name}");
+        
+		// Turn on the subject's physics
+		subject.SetPhysicsEnabled(true);
+        
+		// Unplug the subject from this agent
+		Debug.Log($"{name} is unplugging {subject} from themselves");
+		subject.PluggedInto = null;
+		PluggedInto = null;
+		subject.transform.SetParent(null);
+		subject.OnObjectUnplugged(subject);
+        
+		// TODO: Wait for any animations and whatnot
+		onComplete?.Invoke();
 	}
 
 	public virtual void OnHeardShout(ShoutType shout, BaseAgent shouter)
@@ -115,7 +136,10 @@ public abstract class BaseAgent : SerializedMonoBehaviour
 	
 	public void FlagACriminal()
 	{
-		StartCoroutine(FlagACriminalInternal());
+		if(_criminalCoroutine != null)
+			StopCoroutine(_criminalCoroutine);
+		
+		_criminalCoroutine = StartCoroutine(FlagACriminalInternal());
 	}
 
 	private IEnumerator FlagACriminalInternal()
@@ -146,6 +170,13 @@ public abstract class BaseAgent : SerializedMonoBehaviour
 			IsKnockedOut = true;
 			_animator.SetTrigger("Death");
 		}
+	}
+
+	public void SetPhysicsEnabled(bool enabled)
+	{
+		var rigidbody = gameObject.GetComponent<Rigidbody>();
+		rigidbody.useGravity = enabled;
+		rigidbody.isKinematic = !enabled;
 	}
 }
 
@@ -186,8 +217,10 @@ public abstract class Agent<AgentType> : BaseAgent where AgentType : BaseAgent
 		// Update the recently interacted with agents list
 		foreach (var interactedAgent in _recentlyInteractedAgents.ToArray())
 		{
+			interactedAgent.NextInteractionCooldown -= Time.deltaTime;
+			
 			// If enough time has passed
-			if (Time.time - interactedAgent.TimeInteractedWith >= _agentInteractionCooldown)
+			if (interactedAgent.NextInteractionCooldown <= 0f)
 				_recentlyInteractedAgents.Remove(interactedAgent);
 		}
 	}
@@ -209,11 +242,11 @@ public abstract class Agent<AgentType> : BaseAgent where AgentType : BaseAgent
 		var existingAgentInteraction = _recentlyInteractedAgents.FirstOrDefault(a => a.Agent == agent);
 		if (existingAgentInteraction != null)
 		{
-			existingAgentInteraction.TimeInteractedWith = Time.time;
+			existingAgentInteraction.NextInteractionCooldown = _agentInteractionCooldown * agent.AlreadyVisitedCooldownMultiplier;
 		}
 		else
 			// Add the agent to the list of agents recently interacted with
-			_recentlyInteractedAgents.Add(new AgentInteraction(agent));
+			_recentlyInteractedAgents.Add(new AgentInteraction(agent, _agentInteractionCooldown * agent.AlreadyVisitedCooldownMultiplier));
 	}
 
 	public bool InRange(BaseAgent target, float? rangeOverride = null)

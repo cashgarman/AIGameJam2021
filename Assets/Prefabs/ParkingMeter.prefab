@@ -108,6 +108,10 @@ MonoBehaviour:
     SerializationNodes: []
   _shoutRange: 30
   _criminalFlagCooldown: 30
+  _maxHealth: 0
+  _healthOverride: 0
+  _healthDisplay: {fileID: 0}
+  _home: {fileID: 0}
   _agentInteractionCooldown: 5
   _minInteractionDistance: 3
   _progress: {fileID: 7906415980945895646}
@@ -303,7 +307,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1749987580461121687
 RectTransform:
   m_ObjectHideFlags: 0
@@ -397,6 +401,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9afebccc6d35f754dbea83c8dae64e3e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentCam: {fileID: 0}
 --- !u!1001 &1305529553173131436
 PrefabInstance:
   m_ObjectHideFlags: 0

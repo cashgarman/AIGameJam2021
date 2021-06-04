@@ -46,10 +46,10 @@ public class RobotAnimationController : MonoBehaviour
         }
     }
 
-    private void OnGUI()
-    {
-        foreach(var trigger in _animator.parameters.Where(p => p.type == AnimatorControllerParameterType.Trigger))
-            if (GUILayout.Button(trigger.name))
-                _animator.SetTrigger(trigger.name);
-    }
+    // private void OnGUI()
+    // {
+    //     foreach(var trigger in _animator.parameters.Where(p => p.type == AnimatorControllerParameterType.Trigger))
+    //         if (GUILayout.Button(trigger.name))
+    //             _animator.SetTrigger(trigger.name);
+    // }
 }

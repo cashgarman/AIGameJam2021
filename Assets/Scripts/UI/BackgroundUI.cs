@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace UI
 {
@@ -6,7 +7,8 @@ namespace UI
 	{
 		private void OnMouseUp()
 		{
-			GameUI.OnAgentSelected(null);
+			if(!EventSystem.current.IsPointerOverGameObject())
+				GameUI.OnAgentSelected(null);
 		}
 	}
 }

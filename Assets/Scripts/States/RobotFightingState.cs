@@ -25,8 +25,8 @@ namespace States
 
 			Debug.Log($"{Agent.Name} starting to fight {_target.Name}");
 			
-			// Start the attack cooldown
-			_attackCooldown = Agent.AttackCooldown;
+			// Give them a chance to throw a punch at least!
+			_attackCooldown = 0;
 		}
 
 		public override void OnTick()
